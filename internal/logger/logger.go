@@ -12,10 +12,13 @@ import (
 type Level int
 
 const (
-	LevelError Level = iota
+	// LevelSilent suppresses all output.
+	LevelSilent Level = iota
+	LevelError
 	LevelWarn
 	LevelInfo
 	LevelDebug
+	LevelTrace
 )
 
 var levelNames = map[Level]string{
@@ -23,6 +26,31 @@ var levelNames = map[Level]string{
 	LevelWarn:  "WARN",
 	LevelInfo:  "INFO",
 	LevelDebug: "DEBUG",
+	LevelTrace: "TRACE",
+}
+
+// ParseLevel converts a case-insensitive level name into a Level. Unknown
+// names default to LevelInfo so configuration typos degrade to a usable log.
+func ParseLevel(s string) Level {
+	switch s {
+	case "silent":
+		return LevelSilent
+	case "error":
+		return LevelError
+	case "warn":
+		return LevelWarn
+	case "debug":
+		return LevelDebug
+	case "trace":
+		return LevelTrace
+	default:
+		return LevelInfo
+	}
+}
+
+// String returns the canonical name for a level.
+func (l Level) String() string {
+	return levelNames[l]
 }
 
 type Logger struct {
@@ -41,7 +69,7 @@ func New() *Logger {
 	}
 }
 
-func (l *Logger) SetVerbose(v bool)    { l.verbose = v }
+func (l *Logger) SetVerbose(v bool)     { l.verbose = v }
 func (l *Logger) SetQuiet(q bool)       { l.quiet = q }
 func (l *Logger) SetLevel(level Level)  { l.level = level }
 func (l *Logger) SetWriter(w io.Writer) { l.writer = w }
@@ -50,7 +78,13 @@ func (l *Logger) log(level Level, format string, args ...any) {
 	if l.quiet && level < LevelError {
 		return
 	}
-	if level > l.level && !(level == LevelDebug && l.verbose) {
+	// verbose implies at least debug-level output, regardless of the
+	// configured level.
+	effective := l.level
+	if l.verbose && effective < LevelDebug {
+		effective = LevelDebug
+	}
+	if level > effective {
 		return
 	}
 
@@ -74,9 +108,10 @@ func (l *Logger) log(level Level, format string, args ...any) {
 }
 
 func (l *Logger) Debug(format string, args ...any) { l.log(LevelDebug, format, args...) }
-func (l *Logger) Info(format string, args ...any)   { l.log(LevelInfo, format, args...) }
-func (l *Logger) Warn(format string, args ...any)   { l.log(LevelWarn, format, args...) }
-func (l *Logger) Error(format string, args ...any)   { l.log(LevelError, format, args...) }
+func (l *Logger) Info(format string, args ...any)  { l.log(LevelInfo, format, args...) }
+func (l *Logger) Warn(format string, args ...any)  { l.log(LevelWarn, format, args...) }
+func (l *Logger) Error(format string, args ...any) { l.log(LevelError, format, args...) }
+func (l *Logger) Trace(format string, args ...any) { l.log(LevelTrace, format, args...) }
 
 func (l *Logger) PrintTable(header []string, rows [][]string) {
 	if l.quiet {

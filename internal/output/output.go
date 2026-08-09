@@ -48,10 +48,10 @@ func New() *Printer {
 	}
 }
 
-func (p *Printer) SetWriter(w io.Writer)   { p.writer = w }
-func (p *Printer) SetFormat(f Format)       { p.format = f }
-func (p *Printer) SetColor(c bool)          { p.color = c }
-func (p *Printer) Format() Format           { return p.format }
+func (p *Printer) SetWriter(w io.Writer) { p.writer = w }
+func (p *Printer) SetFormat(f Format)    { p.format = f }
+func (p *Printer) SetColor(c bool)       { p.color = c }
+func (p *Printer) Format() Format        { return p.format }
 
 func (p *Printer) Print(v any) {
 	switch p.format {
