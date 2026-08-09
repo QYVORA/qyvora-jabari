@@ -1,0 +1,40 @@
+# JABARI configuration example
+# Copy to ~/.jabari/config.yaml or $HOME/.config/jabari/config.yaml and edit.
+
+# Pipeline profile: quick | standard | deep | application | device |
+# network | compliance | research
+profile: standard
+
+# Default report/output format: terminal | text | json | yaml | markdown | html
+output: terminal
+
+# Log level: debug | info | warn | error
+log:
+  level: info
+
+# Mark runs as pre-authorized. Strong statement: only enable in environments
+# you control and trust. Equivalent to passing -y on every command.
+authorized: false
+
+# Timeouts
+timeout:
+  device: 10s   # per adb operation
+  connect: 5s   # transport connect
+
+# Reporting
+report:
+  dir: reports
+
+# Enumeration
+enumeration:
+  detail: full          # full | minimal
+  include_system: false
+
+# Validation stage
+validation:
+  enabled: true
+
+# Evidence
+evidence:
+  enabled: true
+  dir: evidence

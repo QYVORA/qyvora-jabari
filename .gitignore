@@ -1,4 +1,23 @@
+# Build outputs
 bin/
-.DS_Store
+
+# Sessions, reports, evidence (may contain sensitive data)
+reports/
+evidence/
+*.session.json
+
+# Local configuration
 *.local.yaml
 *.local.yml
+config.local.*
+.env
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test artifacts
+*.out
+coverage.*
