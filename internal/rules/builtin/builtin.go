@@ -1,0 +1,281 @@
+// Package builtin registers the initial set of JABARI rules (AND-xxx). The
+// rules here cover the device and application conditions that the foundation
+// can already observe; rules requiring APK extraction or runtime validation
+// are added as those modules land.
+package builtin
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/anomalyco/qyvora-jabari/internal/rules"
+	"github.com/anomalyco/qyvora-jabari/pkg/models"
+)
+
+// Register adds every builtin rule to the registry. It returns the first
+// registration error so callers know if the builtin set is inconsistent.
+func Register(r *rules.Registry) error {
+	for _, rule := range []rules.Rule{
+		debuggableProductionRule,
+		outdatedPatchRule,
+		adbUnauthRule,
+		rootedDeviceRule,
+		backupEnabledRule,
+		cleartextTrafficRule,
+		debuggableAppRule,
+	} {
+		if err := r.Register(rule); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// deviceRule is a helper that adapts a pure function into a Rule.
+type deviceRule struct {
+	id          string
+	name        string
+	category    string
+	description string
+	severity    models.Severity
+	mitre       []string
+	eval        func(ctx context.Context, d *models.DeviceInfo) ([]models.Finding, error)
+}
+
+func (r *deviceRule) ID() string                { return r.id }
+func (r *deviceRule) Name() string              { return r.name }
+func (r *deviceRule) Category() string          { return r.category }
+func (r *deviceRule) Description() string       { return r.description }
+func (r *deviceRule) Severity() models.Severity { return r.severity }
+func (r *deviceRule) MitreRefs() []string       { return r.mitre }
+
+func (r *deviceRule) Evaluate(ctx context.Context, ec rules.EvaluationContext) ([]models.Finding, error) {
+	if ec.Device == nil {
+		return nil, nil
+	}
+	return r.eval(ctx, ec.Device)
+}
+
+func finding(id, title, desc string, sev models.Severity, conf models.Confidence) models.Finding {
+	return models.Finding{
+		ID:          models.NewID("fnd"),
+		Title:       title,
+		Category:    "android-configuration",
+		Description: desc,
+		Severity:    sev,
+		Confidence:  conf,
+		Status:      models.StatusDetected,
+		Timestamp:   time.Now().UTC(),
+	}
+}
+
+// AND-001 flags a device built with ro.debuggable=1. On a shipping device
+// this indicates a development build in production.
+var debuggableProductionRule = &deviceRule{
+	id:       "AND-001",
+	name:     "Debuggable Production Device",
+	category: "android-configuration",
+	description: "The device reports ro.debuggable=1, which enables adb root and " +
+		"debugging capabilities that should not be present on production builds.",
+	severity: models.SeverityHigh,
+	mitre:    []string{"T1529"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		if d.DebugState != "1" {
+			return nil, nil
+		}
+		f := finding("AND-001", "Debuggable Production Device",
+			"ro.debuggable is set to 1; the device was built as a debuggable image.",
+			models.SeverityHigh, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "ro.debuggable",
+			Content: "1",
+		})
+		f.Recommendation = "Disable debugging on production builds and enforce verify apps."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-002 flags devices whose security patch level is older than the
+// configured threshold. The threshold defaults to six months and can be
+// overridden via the assessment profile.
+var outdatedPatchRule = &deviceRule{
+	id:       "AND-002",
+	name:     "Outdated Security Patch Level",
+	category: "device-hygiene",
+	description: "The Android security patch level is older than the acceptable " +
+		"threshold, meaning known platform vulnerabilities may be unpatched.",
+	severity: models.SeverityMedium,
+	mitre:    []string{"T1210"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		patch, err := time.Parse("2006-01-02", d.SecurityPatch)
+		if err != nil {
+			return nil, nil
+		}
+		threshold := time.Now().AddDate(0, -6, 0)
+		if patch.After(threshold) {
+			return nil, nil
+		}
+		f := finding("AND-002", "Outdated Security Patch Level",
+			fmt.Sprintf("Security patch level %s is older than the six-month threshold.",
+				d.SecurityPatch), models.SeverityMedium, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "ro.build.version.security_patch",
+			Content: d.SecurityPatch,
+		})
+		f.Recommendation = "Update the device to the latest available security patch level."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-003 flags ro.adb.secure=0, which means ADB on the device requires no
+// authorization and any connected host can run commands.
+var adbUnauthRule = &deviceRule{
+	id:       "AND-003",
+	name:     "ADB Unauthenticated Access",
+	category: "device-exposure",
+	description: "ro.adb.secure is set to 0, so ADB does not require host " +
+		"authorization. Any host able to reach the ADB port can execute commands.",
+	severity: models.SeverityCritical,
+	mitre:    []string{"T1471"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		if d.RoAdbSecure == "1" {
+			return nil, nil
+		}
+		if d.RoAdbSecure == "" {
+			// Older devices may not expose the property at all; do not fire
+			// on missing data.
+			return nil, nil
+		}
+		f := finding("AND-003", "ADB Unauthenticated Access",
+			"ADB is enabled without device-side authorization.",
+			models.SeverityCritical, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "ro.adb.secure",
+			Content: "0",
+		})
+		f.Recommendation = "Set ro.adb.secure=1 and disable ADB on production devices."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-004 reports a rooted device as a security-relevant condition.
+var rootedDeviceRule = &deviceRule{
+	id:       "AND-004",
+	name:     "Rooted Device",
+	category: "device-hygiene",
+	description: "A su binary is present, indicating the device has been rooted. " +
+		"Root access weakens the platform trust boundary.",
+	severity: models.SeverityHigh,
+	mitre:    []string{"T1471"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		if !d.Rooted {
+			return nil, nil
+		}
+		f := finding("AND-004", "Rooted Device",
+			"Evidence of a su binary was found on the device.",
+			models.SeverityHigh, models.ConfidenceHigh)
+		f.Recommendation = "Assess whether root is required; consider attestation-based hardening."
+		return []models.Finding{f}, nil
+	},
+}
+
+// appRule adapts a function over a single app into a Rule that evaluates the
+// whole app inventory.
+type appRule struct {
+	id          string
+	name        string
+	category    string
+	description string
+	severity    models.Severity
+	mitre       []string
+	eval        func(ctx context.Context, app models.Application) ([]models.Finding, error)
+}
+
+func (r *appRule) ID() string                { return r.id }
+func (r *appRule) Name() string              { return r.name }
+func (r *appRule) Category() string          { return r.category }
+func (r *appRule) Description() string       { return r.description }
+func (r *appRule) Severity() models.Severity { return r.severity }
+func (r *appRule) MitreRefs() []string       { return r.mitre }
+
+func (r *appRule) Evaluate(ctx context.Context, ec rules.EvaluationContext) ([]models.Finding, error) {
+	var findings []models.Finding
+	for _, app := range ec.Apps {
+		found, err := r.eval(ctx, app)
+		if err != nil {
+			return nil, err
+		}
+		for i := range found {
+			found[i].Attributes = map[string]string{"package": app.PackageName}
+			findings = append(findings, found[i])
+		}
+	}
+	return findings, nil
+}
+
+// AND-005 flags apps that allow backup of their data.
+var backupEnabledRule = &appRule{
+	id:       "AND-005",
+	name:     "Application Backup Enabled",
+	category: "application-security",
+	description: "The application allows data backup, which can expose private app " +
+		"data through adb backup.",
+	severity: models.SeverityMedium,
+	mitre:    []string{"T1409"},
+	eval: func(_ context.Context, app models.Application) ([]models.Finding, error) {
+		if !app.AllowBackup {
+			return nil, nil
+		}
+		f := finding("AND-005", "Application Backup Enabled",
+			"The application declares allowBackup=true.",
+			models.SeverityMedium, models.ConfidenceHigh)
+		f.Recommendation = "Set android:allowBackup=false for apps storing sensitive data."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-006 flags apps that allow cleartext traffic.
+var cleartextTrafficRule = &appRule{
+	id:       "AND-006",
+	name:     "Cleartext Traffic Allowed",
+	category: "application-security",
+	description: "The application permits cleartext network traffic, exposing data " +
+		"in transit.",
+	severity: models.SeverityMedium,
+	mitre:    []string{"T1573"},
+	eval: func(_ context.Context, app models.Application) ([]models.Finding, error) {
+		if !app.UsesCleartext {
+			return nil, nil
+		}
+		f := finding("AND-006", "Cleartext Traffic Allowed",
+			"The application uses or permits cleartext traffic.",
+			models.SeverityMedium, models.ConfidenceHigh)
+		f.Recommendation = "Enforce HTTPS and set usesCleartextTraffic=false."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-007 flags debuggable apps.
+var debuggableAppRule = &appRule{
+	id:       "AND-007",
+	name:     "Debuggable Application",
+	category: "application-security",
+	description: "The application is built with android:debuggable=true, exposing " +
+		"debugging interfaces.",
+	severity: models.SeverityHigh,
+	mitre:    []string{"T1529"},
+	eval: func(_ context.Context, app models.Application) ([]models.Finding, error) {
+		if !app.Debuggable {
+			return nil, nil
+		}
+		f := finding("AND-007", "Debuggable Application",
+			"The application is built with android:debuggable=true, exposing debugging interfaces.",
+			models.SeverityHigh, models.ConfidenceConfirmed)
+		f.Recommendation = "Remove android:debuggable=true from release builds."
+		return []models.Finding{f}, nil
+	},
+}
