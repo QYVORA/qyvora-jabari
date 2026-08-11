@@ -5,19 +5,26 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/anomalyco/qyvora-jabari/internal/banner"
 )
 
-// ANSI style codes. Red is reserved for hard errors and the prompt accent;
-// warnings use Amber and successes use Green (bettercap/msfconsole convention).
+// ANSI style codes. The brand accent is lime green (#85C236); hard errors are
+// red, warnings Amber and neutral text white/dim (bettercap/msfconsole
+// convention).
 const (
 	ansiReset   = "\x1b[0m"
 	ansiBold    = "\x1b[1m"
 	ansiDim     = "\x1b[2m"
 	ansiRed     = "\x1b[31m"
-	ansiGreen   = "\x1b[32m"
 	ansiAmber   = "\x1b[33m"
 	ansiWhite   = "\x1b[37m"
 	ansiOnBlack = "\x1b[40m"
+	// Brand lime green #85C236 (RGB 133,194,54) — the primary logo accent.
+	ansiLime = "\x1b[38;2;133;194;54m"
+	// Brand deep blue-black #19222B (RGB 25,34,43) — the logo background,
+	// used for the banner's negative space.
+	ansiDeep = "\x1b[38;2;25;34;43m"
 )
 
 // sectionWidth is the fixed visible width of every console section rule.
@@ -57,8 +64,8 @@ func (u *consoleUI) paint(s, code string) string {
 // Red paints a string red (hard errors and the prompt accent).
 func (u *consoleUI) Red(s string) string { return u.paint(s, ansiRed) }
 
-// Green paints a string green (success).
-func (u *consoleUI) Green(s string) string { return u.paint(s, ansiGreen) }
+// Green paints a string in the brand lime green (#85C236) — success.
+func (u *consoleUI) Green(s string) string { return u.paint(s, ansiLime) }
 
 // Amber paints a string amber (warning).
 func (u *consoleUI) Amber(s string) string { return u.paint(s, ansiAmber) }
@@ -119,10 +126,12 @@ func (u *consoleUI) Err(format string, args ...any) {
 }
 
 // Glyph returns a colored "[x]" token for a status glyph character.
+// Success uses the brand lime, the system prompt uses bold lime, warnings
+// Amber, hard errors red, and neutral states dim white.
 func (u *consoleUI) Glyph(glyph string) string {
 	switch glyph {
 	case "+":
-		return u.paint("[+]", ansiGreen)
+		return u.paint("[+]", ansiLime)
 	case "*":
 		return u.paint("[*]", ansiWhite)
 	case "!":
@@ -130,7 +139,7 @@ func (u *consoleUI) Glyph(glyph string) string {
 	case "x", "X":
 		return u.paint("[x]", ansiBold+ansiRed)
 	case ">":
-		return u.paint("[>]", ansiBold+ansiWhite)
+		return u.paint("[>]", ansiBold+ansiLime)
 	case "-":
 		return u.paint("[-]", ansiDim+ansiWhite)
 	default:
@@ -138,14 +147,14 @@ func (u *consoleUI) Glyph(glyph string) string {
 	}
 }
 
-// Prompt builds the interactive prompt with the framework name in bold red
-// (the deliberate accent color) and a bold white chevron.
+// Prompt builds the interactive prompt with the framework name in bold brand
+// lime (the deliberate accent color) and a bold white chevron.
 func (u *consoleUI) Prompt(name string) string {
-	return u.paint(name, ansiBold+ansiRed) + u.paint(" > ", ansiBold+ansiWhite)
+	return u.paint(name, ansiBold+ansiLime) + u.paint(" > ", ansiBold+ansiWhite)
 }
 
-// HUD prints a one-line status bar with a red edge block and space padding
-// between left and right sections spanning the terminal width.
+// HUD prints a one-line status bar with a brand lime edge block and space
+// padding between left and right sections spanning the terminal width.
 func (u *consoleUI) HUD(left, right string) {
 	cols := u.width
 	if cols < 20 {
@@ -155,7 +164,7 @@ func (u *consoleUI) HUD(left, right string) {
 	if pad < 1 {
 		pad = 1
 	}
-	fmt.Fprintf(u.w, "%s %s%s\n", u.paint("▮", ansiBold+ansiRed), left, strings.Repeat(" ", pad)+right)
+	fmt.Fprintf(u.w, "%s %s%s\n", u.paint("▮", ansiBold+ansiLime), left, strings.Repeat(" ", pad)+right)
 }
 
 // Table prints a header and aligned rows, padded to the widest visible cell.
@@ -200,14 +209,36 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 	}
 }
 
-// Banner prints the console banner art followed by the tagline.
+// Banner prints the canonical brand banner (internal/banner) followed by the
+// tagline, mapping each glyph to the logo palette so the mark renders in the
+// brand colors on a real terminal and stays plain when colors are off.
 func (u *consoleUI) Banner(tagline string) {
-	for _, line := range jabariBannerArt {
-		fmt.Fprintln(u.w, u.White(line))
+	for _, line := range strings.Split(banner.Art, "\n") {
+		var b strings.Builder
+		for _, r := range line {
+			b.WriteString(u.paint(string(r), bannerGlyphColor(r)))
+		}
+		fmt.Fprintln(u.w, b.String())
 	}
 	fmt.Fprintln(u.w)
 	fmt.Fprintln(u.w, u.BoldWhite(tagline))
 	fmt.Fprintln(u.w)
+}
+
+// bannerGlyphColor maps a glyph of the canonical brand art to the logo
+// palette: '%' is the lime-green (#85C236) robot body, '#' the deep
+// blue-black (#19222B) circular background, and '+'/'*' the white (#FFFFFF)
+// structural details.
+func bannerGlyphColor(r rune) string {
+	switch r {
+	case '%':
+		return ansiLime
+	case '#':
+		return ansiDeep
+	case '+', '*':
+		return ansiWhite
+	}
+	return ansiWhite
 }
 
 // BannerFoot prints the version footer and a help hint under the banner.
@@ -296,14 +327,4 @@ func writerIsTerminal(w io.Writer) bool {
 		return false
 	}
 	return fi.Mode()&os.ModeCharDevice != 0
-}
-
-// jabariBannerArt is the console banner (JABARI wordmark in block letters).
-var jabariBannerArt = []string{
-	"██████   ████  ██████   ████  ██████  ██████ ",
-	"   ██  ██  ██  ██  ██  ██  ██  ██  ██    ██  ",
-	"   ██  ██  ██  █████   ██  ██  █████     ██  ",
-	"   ██  ██████  ██  ██  ██████  ██ ███    ██  ",
-	"   ██  ██  ██  ██  ██  ██  ██  ██  ██    ██  ",
-	"██████  ██  ██  ██████  ██  ██  ██  ██  ██████",
 }

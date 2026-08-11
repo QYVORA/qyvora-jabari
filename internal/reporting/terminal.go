@@ -5,12 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anomalyco/qyvora-jabari/internal/banner"
 	"github.com/anomalyco/qyvora-jabari/pkg/models"
 )
 
-// renderTerminal prints a compact summary suitable for stdout.
+// renderTerminal prints a compact summary suitable for stdout. The header is
+// the canonical brand banner (internal/banner), not hand-written wordmark
+// text.
 func renderTerminal(w io.Writer, s *models.Session) error {
-	writef(w, "ANDROIDSEC\n")
+	writef(w, "%s\n", strings.TrimRight(banner.Art, "\n"))
 	writef(w, "%s\n", repeat("─", 46))
 	writef(w, "\n")
 

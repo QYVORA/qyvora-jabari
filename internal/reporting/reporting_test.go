@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/anomalyco/qyvora-jabari/internal/banner"
 	"github.com/anomalyco/qyvora-jabari/pkg/models"
 )
 
@@ -45,10 +46,14 @@ func render(t *testing.T, format Format) string {
 
 func TestRenderTerminal(t *testing.T) {
 	out := render(t, FormatTerminal)
-	for _, want := range []string{"ANDROIDSEC", "Critical", "1", "ADB Unauthenticated Access"} {
+	for _, want := range []string{"Critical", "1", "ADB Unauthenticated Access"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("terminal output missing %q", want)
 		}
+	}
+	// The report header must be the canonical brand banner, not custom text.
+	if !strings.Contains(out, banner.Art) {
+		t.Error("terminal output missing the canonical brand banner")
 	}
 }
 
