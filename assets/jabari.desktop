@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=JABARI
+GenericName=Android Security Assessment Framework
+Comment=Authorized Android security assessment, attack-surface analysis, and evidence-driven reporting
+Exec=@PREFIX@/bin/jabari
+Icon=jabari
+Terminal=true
+Categories=Development;Security;Utility;
+Keywords=android;security;assessment;analysis;adb;pentest;
