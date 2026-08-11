@@ -1,0 +1,309 @@
+package cli
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"strings"
+)
+
+// ANSI style codes. Red is reserved for hard errors and the prompt accent;
+// warnings use Amber and successes use Green (bettercap/msfconsole convention).
+const (
+	ansiReset   = "\x1b[0m"
+	ansiBold    = "\x1b[1m"
+	ansiDim     = "\x1b[2m"
+	ansiRed     = "\x1b[31m"
+	ansiGreen   = "\x1b[32m"
+	ansiAmber   = "\x1b[33m"
+	ansiWhite   = "\x1b[37m"
+	ansiOnBlack = "\x1b[40m"
+)
+
+// sectionWidth is the fixed visible width of every console section rule.
+const consoleSectionWidth = 60
+
+// consoleUI renders styled output for the interactive console. Colors are
+// enabled only when the writer is a terminal and NO_COLOR is not set, so
+// piped/scripted output stays plain.
+type consoleUI struct {
+	w     io.Writer
+	color bool
+	// width is the live terminal column count used by the HUD; the console
+	// refreshes it before every render.
+	width int
+}
+
+// newConsoleUI builds a UI for w, auto-detecting color support.
+func newConsoleUI(w io.Writer) *consoleUI {
+	u := &consoleUI{w: w, width: consoleSectionWidth}
+	if os.Getenv("NO_COLOR") == "" {
+		u.color = writerIsTerminal(w)
+	}
+	return u
+}
+
+// Enabled reports whether colors are active.
+func (u *consoleUI) Enabled() bool { return u.color }
+
+// paint wraps s in code/Reset when colors are active.
+func (u *consoleUI) paint(s, code string) string {
+	if !u.color || s == "" {
+		return s
+	}
+	return code + s + ansiReset
+}
+
+// Red paints a string red (hard errors and the prompt accent).
+func (u *consoleUI) Red(s string) string { return u.paint(s, ansiRed) }
+
+// Green paints a string green (success).
+func (u *consoleUI) Green(s string) string { return u.paint(s, ansiGreen) }
+
+// Amber paints a string amber (warning).
+func (u *consoleUI) Amber(s string) string { return u.paint(s, ansiAmber) }
+
+// White paints a string plain white (information).
+func (u *consoleUI) White(s string) string { return u.paint(s, ansiWhite) }
+
+// BoldWhite paints a string bold white (headings).
+func (u *consoleUI) BoldWhite(s string) string { return u.paint(s, ansiBold+ansiWhite) }
+
+// DimWhite paints a string dim white (muted).
+func (u *consoleUI) DimWhite(s string) string { return u.paint(s, ansiDim+ansiWhite) }
+
+// Section prints a fixed-width horizontal rule carrying the title, e.g.
+// "──────────────────────── Core ─────────────────────────". Every line is
+// exactly consoleSectionWidth visible columns wide.
+func (u *consoleUI) Section(title string) {
+	label := strings.TrimSpace(title)
+	if label == "" {
+		u.Rule()
+		return
+	}
+	inner := consoleSectionWidth - runeWidth(label) - 2
+	if inner < 2 {
+		inner = 2
+	}
+	left := inner / 2
+	right := inner - left
+	fmt.Fprintf(u.w, "\n%s\n", u.DimWhite(strings.Repeat("─", left)+" "+label+" "+strings.Repeat("─", right)))
+}
+
+// Rule prints a full-width dim rule.
+func (u *consoleUI) Rule() {
+	fmt.Fprintln(u.w, u.DimWhite(strings.Repeat("─", consoleSectionWidth)))
+}
+
+// Clear clears the terminal screen (a no-op when not a terminal).
+func (u *consoleUI) Clear() {
+	if writerIsTerminal(u.w) {
+		fmt.Fprint(u.w, "\x1b[2J\x1b[H")
+	}
+}
+
+// KV prints a "  key: value" pair with the key emphasized.
+func (u *consoleUI) KV(key, value string) {
+	fmt.Fprintf(u.w, "  %s %s\n", u.BoldWhite(key+":"), u.White(value))
+}
+
+// Status prints a status line with a colored glyph (bettercap style):
+// [+] success, [*] info, [!] warning, [x] error, [>] system, [-] neutral.
+func (u *consoleUI) Status(glyph, format string, args ...any) {
+	fmt.Fprintf(u.w, "  %s %s\n", u.Glyph(glyph), u.White(fmt.Sprintf(format, args...)))
+}
+
+// Err prints a hard-error line with a red [x] glyph.
+func (u *consoleUI) Err(format string, args ...any) {
+	fmt.Fprintf(u.w, "  %s %s\n", u.paint("[x]", ansiBold+ansiRed), u.Red(fmt.Sprintf(format, args...)))
+}
+
+// Glyph returns a colored "[x]" token for a status glyph character.
+func (u *consoleUI) Glyph(glyph string) string {
+	switch glyph {
+	case "+":
+		return u.paint("[+]", ansiGreen)
+	case "*":
+		return u.paint("[*]", ansiWhite)
+	case "!":
+		return u.paint("[!]", ansiAmber)
+	case "x", "X":
+		return u.paint("[x]", ansiBold+ansiRed)
+	case ">":
+		return u.paint("[>]", ansiBold+ansiWhite)
+	case "-":
+		return u.paint("[-]", ansiDim+ansiWhite)
+	default:
+		return u.paint("["+glyph+"]", ansiWhite)
+	}
+}
+
+// Prompt builds the interactive prompt with the framework name in bold red
+// (the deliberate accent color) and a bold white chevron.
+func (u *consoleUI) Prompt(name string) string {
+	return u.paint(name, ansiBold+ansiRed) + u.paint(" > ", ansiBold+ansiWhite)
+}
+
+// HUD prints a one-line status bar with a red edge block and space padding
+// between left and right sections spanning the terminal width.
+func (u *consoleUI) HUD(left, right string) {
+	cols := u.width
+	if cols < 20 {
+		cols = 80
+	}
+	pad := cols - runeWidth(left) - runeWidth(right) - 1
+	if pad < 1 {
+		pad = 1
+	}
+	fmt.Fprintf(u.w, "%s %s%s\n", u.paint("▮", ansiBold+ansiRed), left, strings.Repeat(" ", pad)+right)
+}
+
+// Table prints a header and aligned rows, padded to the widest visible cell.
+func (u *consoleUI) Table(headers []string, rows [][]string) {
+	if len(headers) == 0 {
+		return
+	}
+	widths := make([]int, len(headers))
+	for i, h := range headers {
+		widths[i] = runeWidth(h)
+	}
+	for _, r := range rows {
+		for i := 0; i < len(headers) && i < len(r); i++ {
+			if l := runeWidth(r[i]); l > widths[i] {
+				widths[i] = l
+			}
+		}
+	}
+
+	var b strings.Builder
+	for i, h := range headers {
+		if i > 0 {
+			b.WriteString("  ")
+		}
+		b.WriteString(padTo(u.BoldWhite(h), widths[i]))
+	}
+	fmt.Fprintln(u.w, b.String())
+
+	for _, r := range rows {
+		var rb strings.Builder
+		for i := 0; i < len(headers); i++ {
+			if i > 0 {
+				rb.WriteString("  ")
+			}
+			var cell string
+			if i < len(r) {
+				cell = r[i]
+			}
+			rb.WriteString(padTo(u.White(cell), widths[i]))
+		}
+		fmt.Fprintln(u.w, rb.String())
+	}
+}
+
+// Banner prints the console banner art followed by the tagline.
+func (u *consoleUI) Banner(tagline string) {
+	for _, line := range jabariBannerArt {
+		fmt.Fprintln(u.w, u.White(line))
+	}
+	fmt.Fprintln(u.w)
+	fmt.Fprintln(u.w, u.BoldWhite(tagline))
+	fmt.Fprintln(u.w)
+}
+
+// BannerFoot prints the version footer and a help hint under the banner.
+func (u *consoleUI) BannerFoot(version string) {
+	u.Status(">", "v %s", version)
+	fmt.Fprintln(u.w, u.DimWhite("type 'help' for commands, 'quit' to exit"))
+	fmt.Fprintln(u.w)
+}
+
+// runeWidth counts the display width of s, stripping ANSI codes first and
+// counting wide (CJK/emoji) characters as two columns.
+func runeWidth(s string) int {
+	if strings.Contains(s, "\x1b") {
+		s = stripANSI(s)
+	}
+	n := 0
+	for _, r := range s {
+		if isWideRune(r) {
+			n += 2
+		} else {
+			n++
+		}
+	}
+	return n
+}
+
+// isWideRune reports whether r occupies two terminal columns. The ranges
+// mirror the Unicode EastAsianWidth property used by wcwidth.
+func isWideRune(r rune) bool {
+	switch {
+	case r >= 0x1100 && r <= 0x115F,
+		r >= 0x2329 && r <= 0x232A,
+		r >= 0x2E80 && r <= 0xA4CF,
+		r >= 0xAC00 && r <= 0xD7A3,
+		r >= 0xF900 && r <= 0xFAFF,
+		r >= 0xFE10 && r <= 0xFE19,
+		r >= 0xFE30 && r <= 0xFE6F,
+		r >= 0xFF00 && r <= 0xFF60,
+		r >= 0xFFE0 && r <= 0xFFE6,
+		r >= 0x1F300 && r <= 0x1F64F,
+		r >= 0x1F900 && r <= 0x1F9FF:
+		return true
+	}
+	return false
+}
+
+// stripANSI removes ANSI escape sequences from s.
+func stripANSI(s string) string {
+	var out strings.Builder
+	for i := 0; i < len(s); {
+		if s[i] == '\x1b' {
+			j := i + 1
+			for j < len(s) && s[j] != 'm' {
+				j++
+			}
+			if j < len(s) {
+				j++
+			}
+			i = j
+			continue
+		}
+		out.WriteByte(s[i])
+		i++
+	}
+	return out.String()
+}
+
+// padTo pads s (which may contain ANSI codes) with trailing spaces to a
+// visible width of n columns.
+func padTo(s string, n int) string {
+	pad := n - runeWidth(s)
+	if pad <= 0 {
+		return s
+	}
+	return s + strings.Repeat(" ", pad)
+}
+
+// writerIsTerminal reports whether w is an interactive character device.
+func writerIsTerminal(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// jabariBannerArt is the console banner (JABARI wordmark in block letters).
+var jabariBannerArt = []string{
+	"██████   ████  ██████   ████  ██████  ██████ ",
+	"   ██  ██  ██  ██  ██  ██  ██  ██  ██    ██  ",
+	"   ██  ██  ██  █████   ██  ██  █████     ██  ",
+	"   ██  ██████  ██  ██  ██████  ██ ███    ██  ",
+	"   ██  ██  ██  ██  ██  ██  ██  ██  ██    ██  ",
+	"██████  ██  ██  ██████  ██  ██  ██  ██  ██████",
+}

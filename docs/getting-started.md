@@ -8,6 +8,29 @@ export PATH="$PWD/bin:$PATH"
 jabari version
 ```
 
+## Interactive console
+
+Running `jabari` with no subcommand drops you into the interactive,
+Metasploit-style console:
+
+```sh
+jabari
+```
+
+You get a colored prompt (`jabari > `), a live status strip showing the
+current target and profile, tab completion, command history, and every
+one-shot command as a console command:
+
+```text
+jabari > target usb
+jabari > assess
+jabari > report list
+jabari > help
+jabari > quit
+```
+
+The same commands work identically at the shell prompt for one-shot use.
+
 ## First assessment
 
 ### 1. Connect a device over USB

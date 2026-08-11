@@ -82,6 +82,9 @@ make install-user          # per-user, no root
 ## Quick start
 
 ```sh
+# Drop into the interactive console (Metasploit-style REPL)
+jabari
+
 # Assess a connected device (interactive authorization)
 jabari assess usb
 
@@ -90,6 +93,16 @@ jabari assess ip 192.168.1.50
 
 # Non-interactive (automation), deep profile, JSON report
 jabari assess ip 192.168.1.50 -y --profile deep --json
+```
+
+Inside the console you get a colored prompt, a live target/profile status
+strip, tab completion, and history:
+
+```text
+jabari > target usb
+jabari > assess
+jabari > help
+jabari > quit
 ```
 
 Example terminal output:

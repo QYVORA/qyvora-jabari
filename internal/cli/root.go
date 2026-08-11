@@ -64,6 +64,15 @@ var rootCmd = &cobra.Command{
 	Version:       version.String(),
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	// Running "jabari" with no subcommand drops into the interactive
+	// Metasploit-style console. One-shot commands remain available both at
+	// the shell and as console commands.
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return fmt.Errorf("unknown command %q (try 'jabari --help')", args[0])
+		}
+		return runConsole(cmd.Context())
+	},
 }
 
 // Execute runs the root command and returns the process exit code. It never

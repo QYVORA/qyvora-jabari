@@ -28,6 +28,27 @@ jabari version                print version
 jabari completion <shell>     generate completion scripts
 ```
 
+## Interactive console
+
+Running `jabari` with no subcommand drops into a Metasploit-style console.
+Every command above (and more) works as a console command, so you can
+sequence a workflow without repeating the `jabari` prefix:
+
+```
+jabari > target usb
+jabari > assess
+jabari > report list
+jabari > help
+jabari > quit
+```
+
+Console extras: `help` / `?`, `banner`, `clear`, `history`, and
+`set <key> <value>` / `get <key>` for live config overrides (e.g.
+`set profile deep`, `set timeout 60s`, `set report.format json`).
+Tab completion, command history, and a live target/profile status strip are
+enabled on interactive terminals. Run `help` inside the console for the full
+command list.
+
 ## `assess`
 
 Runs the full pipeline and renders the report.
