@@ -71,6 +71,14 @@ make build          # builds bin/jabari and the bin/androidsec alias
 go build -o bin/jabari ./cmd/jabari
 ```
 
+Install `jabari` into your system so it appears in your commands and app
+menu with the logo (see [Installation](docs/installation.md)):
+
+```sh
+sudo make install          # system-wide (Linux/Unix), or:
+make install-user          # per-user, no root
+```
+
 ## Quick start
 
 ```sh
