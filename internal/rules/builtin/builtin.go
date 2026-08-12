@@ -7,6 +7,8 @@ package builtin
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/anomalyco/qyvora-jabari/internal/rules"
@@ -24,6 +26,9 @@ func Register(r *rules.Registry) error {
 		backupEnabledRule,
 		cleartextTrafficRule,
 		debuggableAppRule,
+		outdatedAndroidRule,
+		testKeysRule,
+		excessivePermsRule,
 	} {
 		if err := r.Register(rule); err != nil {
 			return err
@@ -276,6 +281,128 @@ var debuggableAppRule = &appRule{
 			"The application is built with android:debuggable=true, exposing debugging interfaces.",
 			models.SeverityHigh, models.ConfidenceConfirmed)
 		f.Recommendation = "Remove android:debuggable=true from release builds."
+		return []models.Finding{f}, nil
+	},
+}
+
+// parseAPILevel converts an API level string (e.g. "34") to an int.
+func parseAPILevel(s string) (int, bool) {
+	level, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil {
+		return 0, false
+	}
+	return level, true
+}
+
+// parseAndroidVersion converts a version string like "10" or "9.0" to a float.
+func parseAndroidVersion(s string) (float64, bool) {
+	v, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
+}
+
+// AND-008 flags devices running an outdated Android version (below Android 11
+// / API 30), which are past their security update window.
+var outdatedAndroidRule = &deviceRule{
+	id:       "AND-008",
+	name:     "Outdated Android Version",
+	category: "device-hygiene",
+	description: "The device runs an Android version that has reached end of " +
+		"life, so the platform no longer receives security updates.",
+	severity: models.SeverityMedium,
+	mitre:    []string{"T1210"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		outdated := false
+		detail := ""
+		if level, ok := parseAPILevel(d.APILevel); ok {
+			if level < 30 {
+				outdated = true
+				detail = fmt.Sprintf("API level %d (below the Android 11 minimum)", level)
+			}
+		} else if v, ok := parseAndroidVersion(d.AndroidVersion); ok {
+			if v < 11 {
+				outdated = true
+				detail = fmt.Sprintf("Android %s (below version 11)", d.AndroidVersion)
+			}
+		}
+		if !outdated {
+			return nil, nil
+		}
+		f := finding("AND-008", "Outdated Android Version",
+			detail+". Android versions below 11 are end-of-life and receive no security updates.",
+			models.SeverityMedium, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "android_version",
+			Content: d.AndroidVersion,
+		})
+		f.Recommendation = "Update the device to a supported Android version receiving security updates."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-009 flags builds tagged test-keys (ro.build.tags=test-keys), indicating
+// an image signed with platform test keys rather than production keys.
+var testKeysRule = &deviceRule{
+	id:       "AND-009",
+	name:     "Test-Keys Build",
+	category: "android-configuration",
+	description: "The build is tagged test-keys, meaning it was signed with " +
+		"platform test keys rather than production signing keys.",
+	severity: models.SeverityHigh,
+	mitre:    []string{"T1471"},
+	eval: func(_ context.Context, d *models.DeviceInfo) ([]models.Finding, error) {
+		tags := d.SystemProperties["ro.build.tags"]
+		if tags == "" && strings.Contains(d.BuildFingerprint, "test-keys") {
+			tags = "test-keys"
+		}
+		if tags != "test-keys" {
+			return nil, nil
+		}
+		f := finding("AND-009", "Test-Keys Build",
+			"ro.build.tags is test-keys; the image was built with test platform keys.",
+			models.SeverityHigh, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "ro.build.tags",
+			Content: tags,
+		})
+		f.Recommendation = "Reject test-key signed builds in production and enforce production signing."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-010 flags apps requesting many dangerous permissions, which widens the
+// impact surface if the app or any of its SDKs are compromised.
+var excessivePermsRule = &appRule{
+	id:       "AND-010",
+	name:     "Excessive Dangerous Permissions",
+	category: "application-security",
+	description: "The application requests a large number of dangerous " +
+		"permissions, expanding the impact of a compromise.",
+	severity: models.SeverityMedium,
+	mitre:    []string{"T1406"},
+	eval: func(_ context.Context, app models.Application) ([]models.Finding, error) {
+		var dangerous []string
+		for _, perm := range app.Permissions {
+			if models.PermissionRisk(perm) == "dangerous" {
+				dangerous = append(dangerous, perm)
+			}
+		}
+		if len(dangerous) < 4 {
+			return nil, nil
+		}
+		f := finding("AND-010", "Excessive Dangerous Permissions",
+			fmt.Sprintf("Requests %d dangerous permissions: %s", len(dangerous), strings.Join(dangerous, ", ")),
+			models.SeverityMedium, models.ConfidenceHigh)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "permissions",
+			Content: strings.Join(dangerous, ", "),
+		})
+		f.Recommendation = "Request only the permissions strictly required by the app's functionality."
 		return []models.Finding{f}, nil
 	},
 }

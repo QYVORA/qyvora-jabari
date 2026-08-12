@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/anomalyco/qyvora-jabari/internal/banner"
 )
@@ -246,6 +248,118 @@ func (u *consoleUI) BannerFoot(version string) {
 	u.Status(">", "v %s", version)
 	fmt.Fprintln(u.w, u.DimWhite("type 'help' for commands, 'quit' to exit"))
 	fmt.Fprintln(u.w)
+}
+
+// spinner renders a live progress indicator on the current line while a
+// command executes, so the operator always sees that work is in progress
+// instead of a frozen screen followed by a fresh prompt. It draws with
+// carriage-return + clear-line so it never leaves trailing junk, and every
+// write is mutex-guarded because command output can arrive concurrently.
+type spinner struct {
+	mu     sync.Mutex
+	w      io.Writer
+	paint  func(string) string
+	label  string
+	active bool
+	done   chan struct{}
+}
+
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
+// startSpinner launches a spinner that redraws on the current line. It
+// returns nil when colors are disabled (plain/piped output), in which case
+// callers skip spinner handling entirely.
+func (u *consoleUI) startSpinner(w io.Writer, label string) *spinner {
+	if !u.Enabled() {
+		return nil
+	}
+	s := &spinner{
+		w:      w,
+		paint:  u.Green,
+		label:  label,
+		active: true,
+		done:   make(chan struct{}),
+	}
+	go s.run()
+	return s
+}
+
+func (s *spinner) run() {
+	i := 0
+	for {
+		select {
+		case <-s.done:
+			return
+		default:
+		}
+		s.mu.Lock()
+		if s.active {
+			frame := spinnerFrames[i%len(spinnerFrames)]
+			fmt.Fprintf(s.w, "\r\x1b[K%s %s %s", s.paint("[*]"), s.label, frame)
+		}
+		s.mu.Unlock()
+		i++
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// Stop halts the spinner and clears its line so the next prompt renders
+// cleanly. It must be called exactly once per started spinner.
+func (s *spinner) Stop() {
+	close(s.done)
+	s.mu.Lock()
+	if s.active {
+		fmt.Fprintf(s.w, "\r\x1b[K")
+		s.active = false
+	}
+	s.mu.Unlock()
+}
+
+// Pause clears the spinner line and stops redrawing so an interactive
+// sub-prompt (for example the authorization confirmation) is not clobbered
+// by concurrent output.
+func (s *spinner) Pause() {
+	s.mu.Lock()
+	if s.active {
+		fmt.Fprintf(s.w, "\r\x1b[K")
+		s.active = false
+	}
+	s.mu.Unlock()
+}
+
+// Resume restarts redrawing after Pause.
+func (s *spinner) Resume() {
+	s.mu.Lock()
+	s.active = true
+	s.mu.Unlock()
+}
+
+// busyLabel maps a console command line to a short loading message shown
+// beside the spinner. The empty string marks commands that complete
+// instantly, which get no spinner at all.
+func busyLabel(line string) string {
+	fields := strings.Fields(line)
+	if len(fields) == 0 {
+		return ""
+	}
+	switch strings.ToLower(fields[0]) {
+	case "assess", "run":
+		return "running assessment"
+	case "discover":
+		return "discovering target"
+	case "enumerate":
+		return "inventorying applications"
+	case "analyze":
+		return "evaluating rules"
+	case "validate":
+		return "validating findings"
+	case "target":
+		return "resolving target"
+	case "report", "sessions":
+		return "rendering report"
+	default:
+		return ""
+	}
 }
 
 // runeWidth counts the display width of s, stripping ANSI codes first and

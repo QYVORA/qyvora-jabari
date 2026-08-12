@@ -28,7 +28,12 @@ type jabariConsole struct {
 	out     io.Writer
 	ui      *consoleUI
 	rl      *readline.Instance
+	spin    *spinner
 	history []string
+	// cwd is the console's working directory, used by host shell commands
+	// (!command, shell, cd, pwd) and device shell. It persists across
+	// commands so the operator can navigate while working.
+	cwd string
 }
 
 // runConsole launches the interactive console. When stdin is not a terminal
@@ -106,34 +111,60 @@ func (c *jabariConsole) historyPath() string {
 	return filepath.Join(home, ".jabari_history")
 }
 
-// execWithPrompt runs one command while keeping the readline prompt visible
-// and refreshed during long-running assessments, matching the live-prompt
-// behavior of tools like bettercap and msfconsole.
+// execWithPrompt runs one command while showing a live loading spinner, so
+// the console never jumps straight from a long command back to a prompt
+// without indicating work is in progress. The readline prompt is left alone
+// and the spinner draws on the current line; when the command finishes the
+// spinner clears itself and the next Readline renders the prompt fresh.
+//
+// The previous implementation refreshed the readline prompt from a ticker
+// goroutine while commands ran. That raced with readline's own rendering and
+// corrupted interactive sub-prompts (a typed "y" could be lost or misread,
+// aborting authorization), so the ticker is gone entirely: command output and
+// the spinner are the only writers during execution.
 func (c *jabariConsole) execWithPrompt(line string) (bool, error) {
 	if c.rl == nil {
 		return c.exec(line)
 	}
-	done := make(chan struct{})
-	go func() {
-		t := time.NewTicker(250 * time.Millisecond)
-		defer t.Stop()
-		for {
-			select {
-			case <-done:
-				return
-			case <-t.C:
-				c.rl.Refresh()
-			}
+	// Interactive shell sessions own the terminal; a spinner would fight the
+	// live child process, so any shell invocation runs without one.
+	if c.shellKind(line) != "" {
+		return c.exec(line)
+	}
+	c.spin = c.ui.startSpinner(c.out, busyLabel(line))
+	defer func() {
+		if c.spin != nil {
+			c.spin.Stop()
+			c.spin = nil
 		}
 	}()
 	quit, err := c.exec(line)
-	close(done)
 	return quit, err
+}
+
+// pauseSpinner pauses the active loading spinner so an interactive read (the
+// authorization confirmation) is not clobbered by concurrent redraws.
+func (c *jabariConsole) pauseSpinner() {
+	if c.spin != nil {
+		c.spin.Pause()
+	}
+}
+
+// resumeSpinner restarts the loading spinner after an interactive read.
+func (c *jabariConsole) resumeSpinner() {
+	if c.spin != nil {
+		c.spin.Resume()
+	}
 }
 
 // exec dispatches a single console command line.
 func (c *jabariConsole) exec(line string) (bool, error) {
 	fields := strings.Fields(line)
+	if strings.HasPrefix(fields[0], "!") {
+		// Shell escape hatch (bettercap convention): "!ls -l" runs "ls -l"
+		// on the host, fully outside the command table.
+		return false, c.runHostCommand(fields[0][1:], fields[1:])
+	}
 	cmd := strings.ToLower(fields[0])
 	args := fields[1:]
 
@@ -150,6 +181,22 @@ func (c *jabariConsole) exec(line string) (bool, error) {
 		c.printHistory()
 	case "quit", "exit", "bye":
 		return true, nil
+	case "shell":
+		return false, c.runHostShell()
+	case "device":
+		return false, c.cmdDevice(args)
+	case "cd":
+		if len(args) == 0 {
+			return false, c.changeDir("")
+		}
+		if len(args) == 1 && args[0] == "--prompt" {
+			return c.changeDirOrEscape()
+		}
+		return false, c.changeDir(strings.Join(args, " "))
+	case "pwd":
+		c.printCwd()
+	case "tools":
+		c.cmdTools()
 	case "target":
 		return false, c.cmdTarget(args)
 	case "assess", "run":
@@ -191,11 +238,20 @@ func (c *jabariConsole) help() {
 			{"clear", "clear the screen"},
 			{"quit", "leave the console"},
 		}},
+		{"Shell", [][2]string{
+			{"!<command>", "run a host command (e.g. !ls -l)"},
+			{"shell", "drop into an interactive host shell"},
+			{"cd [dir]", "change the console working directory"},
+			{"pwd", "print the working directory"},
+			{"tools", "report the Android assessment toolchain"},
+		}},
 		{"Targets", [][2]string{
 			{"target usb [serial]", "select a connected authorized device"},
 			{"target ip <addr>", "select an authorized device by IP"},
 			{"target show", "show the current target"},
 			{"target list", "list known targets"},
+			{"device shell", "open an interactive shell on the current target"},
+			{"device shell <cmd>", "run one command on the current target"},
 		}},
 		{"Assessment", [][2]string{
 			{"assess usb [serial]", "assess a connected authorized device"},
@@ -390,8 +446,9 @@ func (c *jabariConsole) selectTarget(t *models.Target) error {
 }
 
 // confirmAuth prompts for explicit authorization via the console prompt. On
-// confirmation the shared authorization flag is set so the one-shot authorize
-// helper grants the target without reading stdin behind the console's back.
+// confirmation the target is granted (mirroring the one-shot authorize
+// helper) so targets.Set and the pipeline's requireTarget accept it, and the
+// shared authorization flag is set so later confirms are skipped.
 func (c *jabariConsole) confirmAuth(t *models.Target) error {
 	if authorizationFlags.authorized || cfg.GetBool("authorized") {
 		return nil
@@ -400,17 +457,25 @@ func (c *jabariConsole) confirmAuth(t *models.Target) error {
 		return errs.NewExitError(3,
 			"target authorization required; set authorized=true in config or run 'jabari assess --authorized' non-interactively")
 	}
+	// Pause the loading spinner so it cannot redraw over this interactive
+	// prompt, then resume once the answer is read. The readline prompt is
+	// swapped for the confirmation text so the typed answer lands on the
+	// [y/N] line instead of a bare "jabari >" prompt.
+	c.pauseSpinner()
 	fmt.Fprintf(c.out, "\n%s\n", c.ui.BoldWhite("Authorized Android security assessment"))
 	fmt.Fprintf(c.out, "  %s %s (%s)\n", c.ui.BoldWhite("Target:"), c.ui.White(t.DisplayName()), t.Type)
 	fmt.Fprintf(c.out, "  %s %s\n", c.ui.BoldWhite("Scope:"), c.ui.DimWhite("authorized assessment only, scoped to this target"))
-	fmt.Fprintf(c.out, "  Confirm authorization? [y/N] ")
+	c.rl.SetPrompt("  Confirm authorization? [y/N] ")
 	answer, err := c.rl.Readline()
+	c.rl.SetPrompt(c.ui.Prompt("jabari"))
+	c.resumeSpinner()
 	if err != nil {
 		return err
 	}
 	if !strings.EqualFold(strings.TrimSpace(answer), "y") {
 		return errors.New("authorization declined; assessment aborted")
 	}
+	t.Auth = granted(t)
 	authorizationFlags.authorized = true
 	return nil
 }
@@ -595,6 +660,13 @@ func (c *jabariConsole) completer() []readline.PrefixCompleterInterface {
 		item("history"),
 		item("quit"),
 		item("exit"),
+		item("shell"),
+		item("cd"),
+		item("pwd"),
+		item("tools"),
+		item("device",
+			item("shell"),
+		),
 		item("target",
 			item("usb"),
 			item("ip"),

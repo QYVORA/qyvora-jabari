@@ -135,9 +135,137 @@ func TestConsoleHelpOutput(t *testing.T) {
 		t.Fatalf("help: %v", err)
 	}
 	out := c.out.(*bytes.Buffer).String()
-	for _, want := range []string{"assess usb [serial]", "target ip <addr>", "report [session-id]", "quit"} {
+	for _, want := range []string{"assess usb [serial]", "target ip <addr>", "report [session-id]", "quit", "!<command>"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help output missing %q", want)
 		}
+	}
+}
+
+func TestConsoleCdPwd(t *testing.T) {
+	c := setupConsole(t)
+
+	if _, err := c.exec("pwd"); err != nil {
+		t.Fatalf("pwd: %v", err)
+	}
+
+	dir := t.TempDir()
+	if _, err := c.exec("cd " + dir); err != nil {
+		t.Fatalf("cd %s: %v", dir, err)
+	}
+	if c.cwd != dir {
+		t.Errorf("cwd = %q, want %q", c.cwd, dir)
+	}
+
+	if _, err := c.exec("cd ."); err != nil {
+		t.Fatalf("cd .: %v", err)
+	}
+	if c.cwd != dir {
+		t.Errorf("cwd after cd . = %q, want %q", c.cwd, dir)
+	}
+
+	if _, err := c.exec("cd /nonexistent-dir-xyz"); err == nil {
+		t.Error("cd /nonexistent-dir-xyz: expected error")
+	}
+	if c.cwd != dir {
+		t.Errorf("cwd after failed cd = %q, want unchanged %q", c.cwd, dir)
+	}
+}
+
+func TestConsoleShellBangUnknown(t *testing.T) {
+	c := setupConsole(t)
+	_, err := c.exec("!definitely_not_a_command_xyz")
+	if err == nil || !strings.Contains(err.Error(), "command not found") {
+		t.Errorf("expected command not found, got %v", err)
+	}
+}
+
+func TestConsoleShellKind(t *testing.T) {
+	c := setupConsole(t)
+	cases := []struct {
+		line string
+		want string
+	}{
+		{"!ls -l", "shell"},
+		{"!pwd", "shell"},
+		{"shell", "interactive"},
+		{"shell uname -a", "shell"},
+		{"cd /tmp", "shell"},
+		{"cd", "shell"},
+		{"pwd", "shell"},
+		{"device shell", "interactive"},
+		{"device shell pm list packages", "shell"},
+		{"help", ""},
+		{"target usb", ""},
+		{"assess", ""},
+	}
+	for _, tc := range cases {
+		if got := c.shellKind(tc.line); got != tc.want {
+			t.Errorf("shellKind(%q) = %q, want %q", tc.line, got, tc.want)
+		}
+	}
+}
+
+func TestConsoleDeviceDispatch(t *testing.T) {
+	c := setupConsole(t)
+
+	_, err := c.exec("device shell ls")
+	if err == nil || !strings.Contains(err.Error(), "no target selected") {
+		t.Errorf("device shell with no target: want missing-target error, got %v", err)
+	}
+
+	if _, err := c.exec("device bogus"); err == nil || !strings.Contains(err.Error(), "unknown device subcommand") {
+		t.Errorf("device bogus: want unknown subcommand error, got %v", err)
+	}
+}
+
+func TestConsoleDeviceScope(t *testing.T) {
+	c := setupConsole(t)
+
+	usb, err := c.deviceScope(&models.Target{
+		ID:     models.NewID("tgt"),
+		Name:   "USB device ABC",
+		Type:   models.TargetUSB,
+		Serial: "ABC123",
+	})
+	if err != nil {
+		t.Fatalf("deviceScope usb: %v", err)
+	}
+	if usb != "ABC123" {
+		t.Errorf("usb scope = %q, want ABC123", usb)
+	}
+
+	netScope, err := c.deviceScope(&models.Target{
+		ID:      models.NewID("tgt"),
+		Name:    "network device",
+		Type:    models.TargetNetwork,
+		Address: "10.0.0.5",
+	})
+	if err != nil {
+		t.Fatalf("deviceScope network: %v", err)
+	}
+	if netScope != "10.0.0.5:5555" {
+		t.Errorf("network scope = %q, want 10.0.0.5:5555", netScope)
+	}
+
+	explicit, err := c.deviceScope(&models.Target{
+		ID:      models.NewID("tgt"),
+		Name:    "network device",
+		Type:    models.TargetNetwork,
+		Address: "10.0.0.5:6000",
+	})
+	if err != nil {
+		t.Fatalf("deviceScope explicit port: %v", err)
+	}
+	if explicit != "10.0.0.5:6000" {
+		t.Errorf("explicit scope = %q, want 10.0.0.5:6000", explicit)
+	}
+
+	if _, err := c.deviceScope(&models.Target{
+		ID:   models.NewID("tgt"),
+		Name: "apk",
+		Type: models.TargetAPK,
+	}); err == nil {
+		t.Error("deviceScope apk: expected error")
 	}
 }

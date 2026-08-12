@@ -101,6 +101,91 @@ func TestAND005BackupEnabled(t *testing.T) {
 	}
 }
 
+func TestAND007DebuggableApp(t *testing.T) {
+	reg := newRegistry(t)
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.example.app", Debuggable: true}},
+	})
+	if findByRuleID(findings, "AND-007") == nil {
+		t.Fatal("AND-007 did not fire for debuggable app")
+	}
+}
+
+func TestAND008OutdatedAndroid(t *testing.T) {
+	reg := newRegistry(t)
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Device: &models.DeviceInfo{AndroidVersion: "10", APILevel: "29"},
+	})
+	if findByRuleID(findings, "AND-008") == nil {
+		t.Fatal("AND-008 did not fire for API 29")
+	}
+
+	reg = newRegistry(t)
+	findings = reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Device: &models.DeviceInfo{AndroidVersion: "14", APILevel: "34"},
+	})
+	if findByRuleID(findings, "AND-008") != nil {
+		t.Error("AND-008 fired for API 34")
+	}
+}
+
+func TestAND009TestKeys(t *testing.T) {
+	reg := newRegistry(t)
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Device: &models.DeviceInfo{
+			SystemProperties: map[string]string{"ro.build.tags": "test-keys"},
+		},
+	})
+	f := findByRuleID(findings, "AND-009")
+	if f == nil {
+		t.Fatal("AND-009 did not fire for test-keys")
+	}
+	if f.Severity != models.SeverityHigh {
+		t.Errorf("severity = %q, want high", f.Severity)
+	}
+
+	reg = newRegistry(t)
+	findings = reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Device: &models.DeviceInfo{
+			BuildFingerprint: "acme/x1/x1:14/TQ3A/user/release-keys",
+		},
+	})
+	if findByRuleID(findings, "AND-009") != nil {
+		t.Error("AND-009 fired for a release-keys build")
+	}
+}
+
+func TestAND010ExcessivePermissions(t *testing.T) {
+	reg := newRegistry(t)
+	perms := []string{
+		"android.permission.CAMERA",
+		"android.permission.RECORD_AUDIO",
+		"android.permission.ACCESS_FINE_LOCATION",
+		"android.permission.READ_CONTACTS",
+		"android.permission.READ_SMS",
+	}
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.example.app", Permissions: perms}},
+	})
+	f := findByRuleID(findings, "AND-010")
+	if f == nil {
+		t.Fatal("AND-010 did not fire for 5 dangerous permissions")
+	}
+	if f.Attributes["package"] != "com.example.app" {
+		t.Errorf("package attribute = %q", f.Attributes["package"])
+	}
+
+	reg = newRegistry(t)
+	findings = reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.example.app", Permissions: []string{
+			"android.permission.CAMERA", "android.permission.INTERNET",
+		}}},
+	})
+	if findByRuleID(findings, "AND-010") != nil {
+		t.Error("AND-010 fired for only 1 dangerous permission")
+	}
+}
+
 func TestRulesTolerateNoData(t *testing.T) {
 	reg := newRegistry(t)
 	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{})

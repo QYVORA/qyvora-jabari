@@ -224,6 +224,28 @@ func (c *Client) Shell(ctx context.Context, command string) (string, error) {
 	return string(out), err
 }
 
+// ShellCmd returns an *exec.Cmd configured to run a shell session on the
+// target device, scoped to the client's device when one is set. The caller
+// attaches stdin/stdout/stderr and Runs it, so interactive sessions (an
+// interactive shell, or commands that read input) work normally. No timeout
+// is imposed: interactive sessions must not be killed mid-conversation.
+// It returns an error when the client is not backed by the exec runner.
+func (c *Client) ShellCmd(ctx context.Context, command string) (*exec.Cmd, error) {
+	r, ok := c.runner.(*execRunner)
+	if !ok {
+		return nil, errors.New("adb: interactive shell requires the exec runner")
+	}
+	args := make([]string, 0, 3)
+	if c.device != "" {
+		args = append(args, "-s", c.device)
+	}
+	args = append(args, "shell")
+	if command != "" {
+		args = append(args, command)
+	}
+	return exec.CommandContext(ctx, r.binary, args...), nil
+}
+
 // GetProp returns the value of an Android system property, or an empty
 // string if the property is unset.
 func (c *Client) GetProp(ctx context.Context, name string) (string, error) {

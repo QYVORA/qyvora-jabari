@@ -110,6 +110,7 @@ func init() {
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newCompletionCmd())
+	rootCmd.AddCommand(newToolsCmd())
 	rootCmd.AddCommand(newTargetCmd())
 	rootCmd.AddCommand(newAssessCmd())
 	rootCmd.AddCommand(newStageCmd("discover", "Identify the current target", runDiscover))
