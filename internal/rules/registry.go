@@ -93,53 +93,76 @@ func (r *Registry) All() []Rule {
 }
 
 // Evaluate runs every registered rule against the context and returns the
-// collected findings. A rule error is recorded as a finding diagnostic rather
-// than aborting the entire assessment, so one broken rule cannot stop the run.
+// collected findings in registration order. Rules are independent checks that
+// read the evaluation context and return their own findings, so they are
+// evaluated concurrently for speed (the registry is safe for concurrent
+// use). A rule error is recorded as a finding diagnostic rather than aborting
+// the entire assessment, so one broken rule cannot stop the run.
 func (r *Registry) Evaluate(ctx context.Context, ec EvaluationContext) []models.Finding {
+	all := r.All()
+	results := make([][]models.Finding, len(all))
+	var wg sync.WaitGroup
+	for i, rule := range all {
+		if err := ctx.Err(); err != nil {
+			break
+		}
+		wg.Add(1)
+		go func(i int, rule Rule) {
+			defer wg.Done()
+			results[i] = r.evaluateRule(ctx, ec, rule)
+		}(i, rule)
+	}
+	wg.Wait()
+
 	var findings []models.Finding
-	for _, rule := range r.All() {
-		found, err := rule.Evaluate(ctx, ec)
-		if err != nil {
-			findings = append(findings, models.Finding{
-				ID:          models.NewID("fnd"),
-				TargetID:    targetID(ec),
-				Title:       fmt.Sprintf("rule %s failed to evaluate", rule.ID()),
-				Category:    "diagnostic",
-				Description: err.Error(),
-				Severity:    models.SeverityLow,
-				Confidence:  models.ConfidenceMedium,
-				Status:      models.StatusInformational,
-				RuleID:      rule.ID(),
-				Timestamp:   time.Now().UTC(),
-			})
-			continue
-		}
-		for i := range found {
-			f := &found[i]
-			if f.ID == "" {
-				f.ID = models.NewID("fnd")
-			}
-			if f.TargetID == "" {
-				f.TargetID = targetID(ec)
-			}
-			if f.Severity == "" {
-				f.Severity = rule.Severity()
-			}
-			if f.Status == "" {
-				f.Status = models.StatusDetected
-			}
-			if f.Confidence == "" {
-				f.Confidence = models.ConfidenceMedium
-			}
-			f.RuleID = rule.ID()
-			f.MitreRefs = append(f.MitreRefs, rule.MitreRefs()...)
-			if f.Timestamp.IsZero() {
-				f.Timestamp = time.Now().UTC()
-			}
-			findings = append(findings, *f)
-		}
+	for _, found := range results {
+		findings = append(findings, found...)
 	}
 	return findings
+}
+
+// evaluateRule runs a single rule and normalizes its findings, translating a
+// rule failure into a diagnostic finding.
+func (r *Registry) evaluateRule(ctx context.Context, ec EvaluationContext, rule Rule) []models.Finding {
+	found, err := rule.Evaluate(ctx, ec)
+	if err != nil {
+		return []models.Finding{{
+			ID:          models.NewID("fnd"),
+			TargetID:    targetID(ec),
+			Title:       fmt.Sprintf("rule %s failed to evaluate", rule.ID()),
+			Category:    "diagnostic",
+			Description: err.Error(),
+			Severity:    models.SeverityLow,
+			Confidence:  models.ConfidenceMedium,
+			Status:      models.StatusInformational,
+			RuleID:      rule.ID(),
+			Timestamp:   time.Now().UTC(),
+		}}
+	}
+	for i := range found {
+		f := &found[i]
+		if f.ID == "" {
+			f.ID = models.NewID("fnd")
+		}
+		if f.TargetID == "" {
+			f.TargetID = targetID(ec)
+		}
+		if f.Severity == "" {
+			f.Severity = rule.Severity()
+		}
+		if f.Status == "" {
+			f.Status = models.StatusDetected
+		}
+		if f.Confidence == "" {
+			f.Confidence = models.ConfidenceMedium
+		}
+		f.RuleID = rule.ID()
+		f.MitreRefs = append(f.MitreRefs, rule.MitreRefs()...)
+		if f.Timestamp.IsZero() {
+			f.Timestamp = time.Now().UTC()
+		}
+	}
+	return found
 }
 
 func targetID(ec EvaluationContext) string {
