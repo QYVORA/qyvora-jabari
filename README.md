@@ -55,6 +55,8 @@ instrumentation, exploitation validation, ecosystem integration).
 - **Evidence system** — every finding carries hashed, reproducible evidence
 - **Risk scoring** — severity × confidence scoring per target
 - **Reporting** — terminal, JSON, Markdown, and HTML
+- **JSONL event stream** — `--events` emits a machine-readable run/stage/
+  finding feed (stdout, stderr, or file) that agents and CI consume directly
 - **Authorization gate** — explicit per-target confirmation, `--dry-run`
   friendly, non-interactive mode for automation
 - **Profiles** — `quick`, `standard`, `deep`, `application`, `device`,
@@ -99,10 +101,10 @@ Inside the console you get a colored prompt, a live target/profile status
 strip, tab completion, and history:
 
 ```text
-jabari > target usb
-jabari > assess
-jabari > help
-jabari > quit
+jabariλ > target usb
+jabariλ > assess
+jabariλ > help
+jabariλ > quit
 ```
 
 Example terminal output:

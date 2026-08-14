@@ -5,11 +5,16 @@
 ## Global flags
 
 ```
--c, --config string   config file (default: $HOME/.jabari/config.yaml)
--y, --yes             skip interactive authorization confirmation
+-c, --config string   config file (searched: ./config.yaml, ~/.qyvora-jabari/,
+                      ~/.config/qyvora-jabari/, ~/.config/qyvora/jabari/, /etc)
+-v, --verbose         verbose output
 -q, --quiet           suppress informational output
     --json            output as JSON (shorthand for -o json)
--o, --output string   report format: table, json, text, yaml
+-o, --output string   output format: terminal, json, markdown, html, yaml
+    --events string   emit JSONL event stream to stdout, stderr, or a file path
+-t, --timeout string  default timeout for device operations (default 30s)
+    --dry-run         validate target + print the assessment plan, no execution
+-y, --yes             skip interactive authorization confirmation
 -h, --help            help
     --version         version
 ```
@@ -65,6 +70,8 @@ Flags:
 - `--profile <name>` — `quick|standard|deep|application|device|network|compliance|research` (default `standard`)
 - `-y, --yes` — non-interactive authorization
 - `--json` / `-o <fmt>` — report format
+- `--dry-run` — validate the target, the authorization decision and the
+  profile, then print the stage plan without connecting to the device
 
 Exit codes: `0` success, `1` runtime/assessment error, `2` usage or
 authorization error.
@@ -120,13 +127,21 @@ jabari completion powershell
 
 ## Environment variables
 
-| Variable | Purpose |
-|---|---|
-| `JABARI_CONFIG` / `ANDROIDSEC_CONFIG` | config file path |
-| `JABARI_PROFILE` | default profile |
-| `JABARI_OUTPUT` | default output format |
-| `JABARI_VERBOSE` | enable verbose logging |
-| `JABARI_AUTHORIZED` | treat runs as authorized (`true`) |
+The environment namespace is `QYVORA_*`. Every config key maps to an
+environment variable of the same name, uppercased with dots replaced by
+underscores (viper automatic binding), so `profile`, `output`, `report.dir`,
+`log.level` become `QYVORA_PROFILE`, `QYVORA_OUTPUT`, `QYVORA_REPORT_DIR`,
+`QYVORA_LOG_LEVEL` and so on. `QYVORA_AUTHORIZED=true` is also honored
+directly. CLI flags take precedence over the environment.
+
+## Events stream
+
+`--events` emits one self-describing JSONL event per line to `stdout`,
+`stderr`, or a file path (created/truncated mode 0600). Events carry
+`schema_version`, `timestamp`, `execution_id`, `framework`, `level`, `event`
+and `data`, covering the run lifecycle (`run.started`, `run.completed`),
+pipeline stages, findings, warnings and errors. The schema is identical across
+the QYVORA frameworks.
 
 ## Exit codes
 
