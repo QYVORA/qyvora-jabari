@@ -1,13 +1,14 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	errs "github.com/anomalyco/qyvora-jabari/internal/errors"
-	"github.com/anomalyco/qyvora-jabari/internal/orchestration"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
+	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // assessFlags are shared by the assess command.
@@ -118,6 +119,21 @@ func assess(cmd *cobra.Command, t *models.Target) error {
 	profile, err := resolveProfile()
 	if err != nil {
 		return err
+	}
+
+	// --dry-run validates the target, the authorization decision and the
+	// profile, then prints the plan without touching the device.
+	if dryRun {
+		pipe := orchestration.ForProfile(profile)
+		fmt.Fprintf(cmd.OutOrStdout(), "dry run: no commands executed\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  target:   %s (%s)\n", t.DisplayName(), t.Type)
+		fmt.Fprintf(cmd.OutOrStdout(), "  profile:  %s\n", profile)
+		fmt.Fprintf(cmd.OutOrStdout(), "  authorized: %t\n", authorized != nil)
+		fmt.Fprintf(cmd.OutOrStdout(), "  stages:\n")
+		for _, st := range pipe.Stages() {
+			fmt.Fprintf(cmd.OutOrStdout(), "    - %s\n", st.Name())
+		}
+		return nil
 	}
 
 	log.Info("starting assessment of %s (profile %s)", t.DisplayName(), profile)
