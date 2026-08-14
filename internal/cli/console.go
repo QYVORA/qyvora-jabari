@@ -13,11 +13,11 @@ import (
 
 	"github.com/chzyer/readline"
 
-	errs "github.com/anomalyco/qyvora-jabari/internal/errors"
-	"github.com/anomalyco/qyvora-jabari/internal/orchestration"
-	"github.com/anomalyco/qyvora-jabari/internal/reporting"
-	"github.com/anomalyco/qyvora-jabari/internal/version"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
+	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/internal/reporting"
+	"github.com/QYVORA/qyvora-jabari/internal/version"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // jabariConsole is the interactive, Metasploit-style console. Running bare
@@ -45,7 +45,7 @@ func runConsole(ctx context.Context) error {
 		return c.runPlain()
 	}
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       c.ui.Prompt("jabari"),
+		Prompt:       c.ui.Prompt("jabariλ"),
 		HistoryFile:  c.historyPath(),
 		AutoComplete: readline.NewPrefixCompleter(c.completer()...),
 	})
@@ -102,13 +102,18 @@ func (c *jabariConsole) runPlain() error {
 	return sc.Err()
 }
 
-// historyPath returns the console history file.
+// historyPath returns the console history file, creating its parent
+// directory (~/.qyvora) so line-editing history survives sessions.
 func (c *jabariConsole) historyPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ".jabari_history"
 	}
-	return filepath.Join(home, ".jabari_history")
+	dir := filepath.Join(home, ".qyvora")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return ".jabari_history"
+	}
+	return filepath.Join(dir, "jabari_history")
 }
 
 // execWithPrompt runs one command while showing a live loading spinner, so
@@ -467,7 +472,7 @@ func (c *jabariConsole) confirmAuth(t *models.Target) error {
 	fmt.Fprintf(c.out, "  %s %s\n", c.ui.BoldWhite("Scope:"), c.ui.DimWhite("authorized assessment only, scoped to this target"))
 	c.rl.SetPrompt("  Confirm authorization? [y/N] ")
 	answer, err := c.rl.Readline()
-	c.rl.SetPrompt(c.ui.Prompt("jabari"))
+	c.rl.SetPrompt(c.ui.Prompt("jabariλ"))
 	c.resumeSpinner()
 	if err != nil {
 		return err
