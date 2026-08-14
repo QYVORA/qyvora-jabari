@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // countingRule is a test rule that records how many times it was evaluated.
@@ -83,15 +83,58 @@ func TestRegistryErrorTolerated(t *testing.T) {
 	if len(findings) != 2 {
 		t.Fatalf("Evaluate returned %d findings, want 2 (1 real + 1 diagnostic)", len(findings))
 	}
-	diagnostic := findings[1]
+	// Locate the diagnostic by its rule ID rather than by index, so the
+	// assertion is order-independent. The registry guarantees deterministic
+	// rule order, but the test must not depend on that ordering to be valid.
+	var diagnostic *models.Finding
+	for i := range findings {
+		if findings[i].RuleID == "TEST-BAD" {
+			diagnostic = &findings[i]
+			break
+		}
+	}
+	if diagnostic == nil {
+		t.Fatal("no diagnostic finding for the failing rule was produced")
+	}
 	if diagnostic.Status != models.StatusInformational {
 		t.Errorf("diagnostic status = %q, want informational", diagnostic.Status)
 	}
 }
 
-type failingRule struct{ countingRule }
+func TestRegistryAllSortedByID(t *testing.T) {
+	reg := NewRegistry()
+	ids := []string{"TEST-002", "TEST-001", "TEST-010", "TEST-003"}
+	for _, id := range ids {
+		r := &failingRule{}
+		r.id = id
+		if err := reg.Register(r); err != nil {
+			t.Fatalf("Register %s: %v", id, err)
+		}
+	}
+	got := reg.All()
+	if len(got) != len(ids) {
+		t.Fatalf("All returned %d rules, want %d", len(got), len(ids))
+	}
+	want := []string{"TEST-001", "TEST-002", "TEST-003", "TEST-010"}
+	for i := range want {
+		if got[i].ID() != want[i] {
+			t.Fatalf("All order = %q, want deterministic sorted order %q",
+				[]string{got[0].ID(), got[1].ID(), got[2].ID(), got[3].ID()}, want)
+		}
+	}
+}
 
-func (r *failingRule) ID() string { return "TEST-BAD" }
+type failingRule struct {
+	countingRule
+	id string
+}
+
+func (r *failingRule) ID() string {
+	if r.id != "" {
+		return r.id
+	}
+	return "TEST-BAD"
+}
 
 func (r *failingRule) Evaluate(ctx context.Context, ec EvaluationContext) ([]models.Finding, error) {
 	return nil, &evaluationFailure{}

@@ -7,10 +7,11 @@ package rules
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // EvaluationContext carries everything a rule may need to evaluate a target.
@@ -81,7 +82,9 @@ func (r *Registry) Get(id string) (Rule, bool) {
 	return rule, ok
 }
 
-// All returns every registered rule.
+// All returns every registered rule in a stable, deterministic order sorted
+// by rule ID. Callers rely on this ordering for findings, reports and CLI
+// output, so it must never depend on Go map iteration order.
 func (r *Registry) All() []Rule {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -89,15 +92,17 @@ func (r *Registry) All() []Rule {
 	for _, rule := range r.rules {
 		out = append(out, rule)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID() < out[j].ID() })
 	return out
 }
 
 // Evaluate runs every registered rule against the context and returns the
-// collected findings in registration order. Rules are independent checks that
-// read the evaluation context and return their own findings, so they are
-// evaluated concurrently for speed (the registry is safe for concurrent
-// use). A rule error is recorded as a finding diagnostic rather than aborting
-// the entire assessment, so one broken rule cannot stop the run.
+// collected findings in deterministic rule order (sorted by rule ID). Rules
+// are independent checks that read the evaluation context and return their
+// own findings, so they are evaluated concurrently for speed (the registry
+// is safe for concurrent use). A rule error is recorded as a finding
+// diagnostic rather than aborting the entire assessment, so one broken rule
+// cannot stop the run.
 func (r *Registry) Evaluate(ctx context.Context, ec EvaluationContext) []models.Finding {
 	all := r.All()
 	results := make([][]models.Finding, len(all))
