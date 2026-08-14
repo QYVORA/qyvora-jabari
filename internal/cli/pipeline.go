@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/evidence"
-	"github.com/anomalyco/qyvora-jabari/internal/orchestration"
-	"github.com/anomalyco/qyvora-jabari/internal/rules"
-	"github.com/anomalyco/qyvora-jabari/internal/rules/builtin"
-	"github.com/anomalyco/qyvora-jabari/internal/transport"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/events"
+	"github.com/QYVORA/qyvora-jabari/internal/evidence"
+	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/internal/rules/builtin"
+	"github.com/QYVORA/qyvora-jabari/internal/transport"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // newAssessmentEnv builds the shared environment for an assessment run:
@@ -102,7 +103,8 @@ func loadSession(path string) (*models.Session, error) {
 }
 
 // runPipeline executes a pipeline for a profile against the current target
-// and persists the resulting session.
+// and persists the resulting session. When --events is configured, scan
+// lifecycle and finding events are streamed as JSONL.
 func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Session, error) {
 	t, err := requireTarget()
 	if err != nil {
@@ -115,8 +117,30 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 	}
 	defer cleanup()
 
+	// Bind the optional JSONL event stream to this run before any stage
+	// executes so the full lifecycle (scan.started .. scan.completed) is
+	// captured.
+	emitter, closeStream, err := newEventsEmitter(env.Session.ID)
+	if err != nil {
+		return nil, err
+	}
+	if closeStream != nil {
+		defer closeStream()
+	}
+	env.Events = emitter
+	if emitter != nil {
+		emitter.Info("jabari", events.ScanStarted, map[string]any{
+			"profile":     string(profile),
+			"target_id":   t.ID,
+			"target_type": string(t.Type),
+		})
+	}
+
 	pipe := orchestration.ForProfile(profile)
 	if err := pipe.Run(ctx, env); err != nil {
+		if emitter != nil {
+			emitter.Fail("jabari", events.Error, map[string]any{"message": err.Error()})
+		}
 		return nil, err
 	}
 	env.Session.Finish()
@@ -126,6 +150,21 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 		log.Warn("persisting session: %v", err)
 	} else {
 		log.Info("session saved to %s", path)
+		if emitter != nil {
+			emitter.Info("jabari", events.ReportGenerated, map[string]any{
+				"path":   path,
+				"format": "json",
+			})
+		}
+	}
+
+	if emitter != nil {
+		emitter.Info("jabari", events.ScanCompleted, map[string]any{
+			"findings":   len(env.Session.Findings),
+			"risk_score": env.Session.RiskScore,
+			"risk_level": env.Session.RiskLevel,
+			"stages":     env.Session.Stages,
+		})
 	}
 	return env.Session, nil
 }

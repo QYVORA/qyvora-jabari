@@ -8,11 +8,12 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/anomalyco/qyvora-jabari/internal/evidence"
-	"github.com/anomalyco/qyvora-jabari/internal/logger"
-	"github.com/anomalyco/qyvora-jabari/internal/rules"
-	"github.com/anomalyco/qyvora-jabari/internal/transport"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/events"
+	"github.com/QYVORA/qyvora-jabari/internal/evidence"
+	"github.com/QYVORA/qyvora-jabari/internal/logger"
+	"github.com/QYVORA/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/internal/transport"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Env is the shared context every pipeline stage receives. It bundles the
@@ -26,6 +27,9 @@ type Env struct {
 	Evidence  *evidence.Store
 	Log       *logger.Logger
 	Config    *viper.Viper
+	// Events is the machine-readable JSONL event emitter, set when the
+	// --events flag is used. Stages must treat a nil emitter as "no stream".
+	Events *events.Emitter
 	// Apps holds the application inventory collected by the enumeration
 	// stage. It feeds the analysis stage's evaluation context.
 	Apps []models.Application

@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/analysis"
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/discovery"
-	"github.com/anomalyco/qyvora-jabari/internal/enumeration"
-	"github.com/anomalyco/qyvora-jabari/internal/risk"
-	"github.com/anomalyco/qyvora-jabari/internal/validation"
+	"github.com/QYVORA/qyvora-jabari/internal/analysis"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/discovery"
+	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
+	"github.com/QYVORA/qyvora-jabari/internal/events"
+	"github.com/QYVORA/qyvora-jabari/internal/risk"
+	"github.com/QYVORA/qyvora-jabari/internal/validation"
 )
 
 // Profile selects which stages run and how deep the assessment goes. The
@@ -79,7 +80,9 @@ func (p *Pipeline) Run(ctx context.Context, env *core.Env) error {
 			env.Session.Stages = append(env.Session.Stages, stage.Name())
 		}
 		start := time.Now()
+		emitStage(env, events.StageStarted, stage.Name(), start, nil)
 		err := stage.Run(ctx, env)
+		emitStage(env, events.StageCompleted, stage.Name(), start, err)
 		reportStage(env, stage.Name(), start, err)
 		if err != nil {
 			if env.Session != nil {
@@ -90,6 +93,27 @@ func (p *Pipeline) Run(ctx context.Context, env *core.Env) error {
 		}
 	}
 	return nil
+}
+
+// emitStage writes stage.started / stage.completed events into the stream
+// when one is configured. Failures are tagged at error level and carry the
+// message so consumers can correlate failures to the failing stage.
+func emitStage(env *core.Env, name, stage string, start time.Time, err error) {
+	if env.Events == nil {
+		return
+	}
+	data := map[string]any{"stage": stage}
+	if name == events.StageCompleted {
+		data["duration_ms"] = time.Since(start).Milliseconds()
+		if err != nil {
+			data["message"] = err.Error()
+		}
+	}
+	if err != nil {
+		env.Events.Fail("jabari", name, data)
+		return
+	}
+	env.Events.Info("jabari", name, data)
 }
 
 // reportStage logs stage progress and invokes the optional terminal reporter.

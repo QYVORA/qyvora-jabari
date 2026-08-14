@@ -6,8 +6,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/events"
+	"github.com/QYVORA/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Stage runs the registered rules against the device and application data
@@ -34,10 +36,37 @@ func (s *Stage) Run(ctx context.Context, env *core.Env) error {
 	findings := env.Rules.Evaluate(ctx, ec)
 	for i := range findings {
 		env.Session.AddFinding(&findings[i])
+		emitFinding(env, &findings[i])
 	}
 
 	if env.Log != nil {
 		env.Log.Info("analysis produced %d finding(s)", len(findings))
 	}
 	return nil
+}
+
+// emitFinding writes finding.discovered (and evidence.collected for findings
+// that carry evidence) into the event stream when one is configured.
+func emitFinding(env *core.Env, f *models.Finding) {
+	if env.Events == nil {
+		return
+	}
+	data := map[string]any{
+		"finding_id": f.ID,
+		"rule_id":    f.RuleID,
+		"title":      f.Title,
+		"severity":   string(f.Severity),
+		"confidence": string(f.Confidence),
+		"status":     string(f.Status),
+	}
+	if f.SessionID != "" {
+		data["session_id"] = f.SessionID
+	}
+	env.Events.Info("jabari", events.FindingDiscovered, data)
+	if len(f.Evidence) > 0 {
+		env.Events.Info("jabari", events.EvidenceCollected, map[string]any{
+			"finding_id":     f.ID,
+			"evidence_count": len(f.Evidence),
+		})
+	}
 }
