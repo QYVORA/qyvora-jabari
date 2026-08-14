@@ -8,5 +8,5 @@ ADDR="${1:?usage: assess_ip.sh <ip-address>}"
 PROFILE="${PROFILE:-deep}"
 
 mkdir -p reports
-./bin/jabari assess "ip ${ADDR}" -y --profile "${PROFILE}" -o json \
+./bin/jabari assess ip "${ADDR}" -y --profile "${PROFILE}" -o json \
     > "reports/assessment-${ADDR}.json"
