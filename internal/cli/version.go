@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/anomalyco/qyvora-jabari/internal/output"
-	"github.com/anomalyco/qyvora-jabari/internal/version"
+	"github.com/QYVORA/qyvora-jabari/internal/output"
+	"github.com/QYVORA/qyvora-jabari/internal/version"
 )
 
 // newVersionCmd builds the "jabari version" command.
@@ -19,7 +19,7 @@ func newVersionCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			info := version.GetInfo()
 
-			if printer.Format() == output.FormatJSON {
+			if printer.Format() != output.FormatTerminal {
 				printer.Print(info)
 				return nil
 			}

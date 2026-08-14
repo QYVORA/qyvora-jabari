@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Format identifies a supported report format.
@@ -24,15 +24,21 @@ const (
 	FormatMarkdown Format = "markdown"
 	// FormatHTML emits a self-contained HTML report.
 	FormatHTML Format = "html"
+	// FormatYAML emits the full session as YAML.
+	FormatYAML Format = "yaml"
 )
 
-// ParseFormat resolves a user-supplied format name.
+// ParseFormat resolves a user-supplied format name. The legacy names "table"
+// and "text" are accepted as aliases for "terminal". Unknown formats return a
+// useful error.
 func ParseFormat(s string) (Format, error) {
 	switch Format(s) {
-	case FormatTerminal, FormatJSON, FormatMarkdown, FormatHTML:
+	case FormatTerminal, "table", "text":
+		return FormatTerminal, nil
+	case FormatJSON, FormatMarkdown, FormatHTML, FormatYAML:
 		return Format(s), nil
 	default:
-		return "", fmt.Errorf("unsupported report format %q", s)
+		return "", fmt.Errorf("unsupported report format %q (valid values: terminal, json, markdown, html, yaml)", s)
 	}
 }
 
@@ -47,6 +53,8 @@ func (w *Writer) Render(ctx context.Context, s *models.Session) error {
 	switch w.Format {
 	case FormatJSON:
 		return renderJSON(w.Out, s)
+	case FormatYAML:
+		return renderYAML(w.Out, s)
 	case FormatMarkdown:
 		return renderMarkdown(w.Out, s)
 	case FormatHTML:

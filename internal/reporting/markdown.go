@@ -7,7 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	yaml "go.yaml.in/yaml/v3"
+
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // renderJSON writes the full session as indented JSON. JSON is the canonical
@@ -16,6 +18,17 @@ func renderJSON(w io.Writer, s *models.Session) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(s)
+}
+
+// renderYAML writes the full session as YAML. YAML mirrors the JSON document
+// so both machine-readable formats carry the identical data contract.
+func renderYAML(w io.Writer, s *models.Session) error {
+	out, err := yaml.Marshal(s)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(out)
+	return err
 }
 
 // renderMarkdown writes a human-readable Markdown report.
@@ -39,6 +52,10 @@ func renderMarkdown(w io.Writer, s *models.Session) error {
 	bw.kv("Medium", strconv.Itoa(counts.Medium))
 	bw.kv("Low", strconv.Itoa(counts.Low))
 	bw.kv("Informational", strconv.Itoa(counts.Informational))
+	if s.RiskScore > 0 {
+		bw.kv("Risk Score", strconv.Itoa(s.RiskScore)+"/100")
+		bw.kv("Risk Level", s.RiskLevel)
+	}
 
 	bw.section("Findings")
 	if len(s.Findings) == 0 {

@@ -3,15 +3,16 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/spf13/cobra"
 
-	errs "github.com/anomalyco/qyvora-jabari/internal/errors"
-	"github.com/anomalyco/qyvora-jabari/internal/reporting"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
+	"github.com/QYVORA/qyvora-jabari/internal/reporting"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // reportFlags are shared by the report command.
@@ -19,6 +20,10 @@ var reportFlags struct {
 	format string
 	list   bool
 }
+
+// stdoutWriter is the destination for rendered reports. It is a variable so
+// tests can redirect output without touching the process-wide os.Stdout.
+var stdoutWriter io.Writer = os.Stdout
 
 // newReportCmd builds "jabari report [session-id]", which renders a saved
 // session. With no argument the most recent session in the report directory
@@ -71,28 +76,36 @@ func listSessions() error {
 }
 
 // renderSession writes a loaded session in the CLI's configured report
-// format. Precedence: --format flag, --json flag, report.format config,
-// terminal default.
+// format. Precedence: --format flag, --output/-o flag, --json flag,
+// report.format config, terminal default. An invalid format is a usage
+// error (exit code 2), never silently accepted.
 func renderSession(ctx context.Context, s *models.Session) error {
-	format := reporting.FormatTerminal
+	format, err := resolveReportFormat()
+	if err != nil {
+		return errs.NewExitError(2, err.Error())
+	}
+	w := &reporting.Writer{Format: format, Out: stdoutWriter}
+	return w.Render(ctx, s)
+}
+
+// resolveReportFormat computes the effective report format for a session
+// render with the documented precedence. The report command's --format flag
+// overrides the canonical --output/-o flag; --json is a compatibility alias
+// for --output json.
+func resolveReportFormat() (reporting.Format, error) {
 	switch {
 	case reportFlags.format != "":
-		parsed, err := reporting.ParseFormat(reportFlags.format)
-		if err != nil {
-			return errs.NewExitError(2, err.Error())
-		}
-		format = parsed
+		return reporting.ParseFormat(reportFlags.format)
+	case outputFmt != "":
+		return reporting.ParseFormat(outputFmt)
 	case jsonOut || cfg.GetBool("json"):
-		format = reporting.FormatJSON
+		return reporting.FormatJSON, nil
 	case cfg.IsSet("report.format"):
 		if v, ok := cfg.Get("report.format").(string); ok && v != "" {
-			if parsed, err := reporting.ParseFormat(v); err == nil {
-				format = parsed
-			}
+			return reporting.ParseFormat(v)
 		}
 	}
-	w := &reporting.Writer{Format: format, Out: os.Stdout}
-	return w.Render(ctx, s)
+	return reporting.FormatTerminal, nil
 }
 
 // sessionPath resolves the session file for the report command.

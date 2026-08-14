@@ -8,30 +8,40 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	yaml "go.yaml.in/yaml/v3"
 )
 
 type Format string
 
 const (
-	FormatTable Format = "table"
-	FormatJSON  Format = "json"
-	FormatText  Format = "text"
-	FormatYAML  Format = "yaml"
+	// FormatTerminal is the human-readable table/text presentation.
+	FormatTerminal Format = "terminal"
+	// FormatJSON is machine-readable JSON.
+	FormatJSON Format = "json"
+	// FormatYAML is machine-readable YAML.
+	FormatYAML Format = "yaml"
 )
 
-var validFormats = map[Format]bool{
-	FormatTable: true,
-	FormatJSON:  true,
-	FormatText:  true,
-	FormatYAML:  true,
-}
+// Legacy format names accepted as aliases for FormatTerminal so existing
+// scripts and configs keep working.
+const (
+	FormatTable Format = "table"
+	FormatText  Format = "text"
+)
 
+// ParseFormat resolves a user-supplied output format name. The legacy names
+// "table" and "text" are normalized to "terminal". Unknown formats return a
+// useful error rather than being silently accepted.
 func ParseFormat(s string) (Format, error) {
-	f := Format(strings.ToLower(s))
-	if !validFormats[f] {
-		return "", fmt.Errorf("invalid output format %q: valid values are table, json, text, yaml", s)
+	switch Format(strings.ToLower(strings.TrimSpace(s))) {
+	case FormatTerminal, FormatTable, FormatText:
+		return FormatTerminal, nil
+	case FormatJSON:
+		return FormatJSON, nil
+	case FormatYAML:
+		return FormatYAML, nil
 	}
-	return f, nil
+	return "", fmt.Errorf("invalid output format %q: valid values are terminal, json, yaml", s)
 }
 
 type Printer struct {
@@ -43,7 +53,7 @@ type Printer struct {
 func New() *Printer {
 	return &Printer{
 		writer: os.Stdout,
-		format: FormatTable,
+		format: FormatTerminal,
 		color:  true,
 	}
 }
@@ -136,5 +146,10 @@ func (p *Printer) printJSON(v any) {
 }
 
 func (p *Printer) printYAML(v any) {
-	fmt.Fprintln(p.writer, v)
+	out, err := yaml.Marshal(v)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "yaml error: %v\n", err)
+		return
+	}
+	p.writer.Write(out)
 }
