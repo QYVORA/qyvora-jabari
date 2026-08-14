@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/anomalyco/qyvora-jabari/internal/errors"
-	"github.com/anomalyco/qyvora-jabari/pkg/adb"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/errors"
+	"github.com/QYVORA/qyvora-jabari/pkg/adb"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // newTargetCmd builds the "jabari target" command group.

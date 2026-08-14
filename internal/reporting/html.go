@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // renderHTML writes a self-contained HTML report (no external assets).

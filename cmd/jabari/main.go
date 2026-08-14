@@ -8,7 +8,7 @@ package main
 import (
 	"os"
 
-	"github.com/anomalyco/qyvora-jabari/internal/cli"
+	"github.com/QYVORA/qyvora-jabari/internal/cli"
 )
 
 func main() {

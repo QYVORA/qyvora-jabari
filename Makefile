@@ -11,10 +11,10 @@ DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 USER    ?= $(shell id -u -n)
 
 LDFLAGS := -s -w \
-	-X github.com/anomalyco/qyvora-jabari/internal/version.Version=$(VERSION) \
-	-X github.com/anomalyco/qyvora-jabari/internal/version.Commit=$(COMMIT) \
-	-X github.com/anomalyco/qyvora-jabari/internal/version.Date=$(DATE) \
-	-X github.com/anomalyco/qyvora-jabari/internal/version.BuildUser=$(USER)
+	-X github.com/QYVORA/qyvora-jabari/internal/version.Version=$(VERSION) \
+	-X github.com/QYVORA/qyvora-jabari/internal/version.Commit=$(COMMIT) \
+	-X github.com/QYVORA/qyvora-jabari/internal/version.Date=$(DATE) \
+	-X github.com/QYVORA/qyvora-jabari/internal/version.BuildUser=$(USER)
 
 # --- install layout ------------------------------------------------------
 # System-wide install (default PREFIX=/usr/local, typically needs root):

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/rules"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Register adds every builtin rule to the registry. It returns the first

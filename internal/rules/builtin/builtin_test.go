@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/rules"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/rules"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 func newRegistry(t *testing.T) *rules.Registry {

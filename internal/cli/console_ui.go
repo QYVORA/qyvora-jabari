@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/banner"
+	"github.com/QYVORA/qyvora-jabari/internal/banner"
 )
 
 // ANSI style codes. The brand accent is lime green (#85C236); hard errors are

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 func TestParseProps(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/anomalyco/qyvora-jabari/internal/target"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/target"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // setupConsole builds a console with fresh globals and a buffer writer, so

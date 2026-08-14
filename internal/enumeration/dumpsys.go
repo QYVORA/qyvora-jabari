@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Field-level parsers for the "dumpsys package <pkg>" output. The output

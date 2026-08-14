@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // NewForTarget builds the transport that matches a target's type. USB targets

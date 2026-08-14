@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Transport is the boundary between the assessment pipeline and the physical

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	errs "github.com/anomalyco/qyvora-jabari/internal/errors"
-	"github.com/anomalyco/qyvora-jabari/pkg/adb"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
+	"github.com/QYVORA/qyvora-jabari/pkg/adb"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // defaultADBPort is the standard ADB over TCP port used when a network target

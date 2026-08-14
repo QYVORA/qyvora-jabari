@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/transport"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/transport"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Stage discovers device metadata for the current target.

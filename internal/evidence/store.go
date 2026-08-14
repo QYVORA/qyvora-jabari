@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // Store persists evidence artifacts to disk. It is safe for concurrent use.

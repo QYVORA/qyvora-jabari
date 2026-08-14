@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/adb"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/adb"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // USBTransport reaches an Android device through the local adb binary over a

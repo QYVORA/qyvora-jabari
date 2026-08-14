@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/transport"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/transport"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // DetailLimitDefault caps how many apps get the (slower) per-package detail

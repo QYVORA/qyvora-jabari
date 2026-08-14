@@ -5,11 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/anomalyco/qyvora-jabari/internal/analysis"
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/internal/discovery"
-	"github.com/anomalyco/qyvora-jabari/internal/enumeration"
-	"github.com/anomalyco/qyvora-jabari/internal/validation"
+	"github.com/QYVORA/qyvora-jabari/internal/analysis"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/internal/discovery"
+	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
+	"github.com/QYVORA/qyvora-jabari/internal/validation"
 )
 
 // stageRunner is the signature shared by single-stage command handlers.

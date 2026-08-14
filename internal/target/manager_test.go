@@ -3,7 +3,7 @@ package target
 import (
 	"testing"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 func authorizedUSB() *models.Target {

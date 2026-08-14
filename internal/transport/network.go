@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/adb"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/adb"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // NetworkTransport reaches a specific authorized Android device by its known

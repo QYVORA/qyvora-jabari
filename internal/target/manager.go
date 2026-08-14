@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // ErrUnauthorizedTarget is returned when an operation requires an authorized
