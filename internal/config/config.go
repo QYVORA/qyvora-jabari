@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 
-	"github.com/anomalyco/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
 )
 
 const appName = "qyvora-jabari"
@@ -44,6 +45,7 @@ func Load(cfgFile string) (*viper.Viper, error) {
 	}
 
 	v.SetEnvPrefix("QYVORA")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	v.AutomaticEnv()
 
 	v.SetDefault("profile", "standard")
@@ -103,7 +105,8 @@ func configSearchDirs(cfgFile string) []string {
 
 	if home, err := os.UserHomeDir(); err == nil {
 		dirs = append(dirs, filepath.Join(home, "."+appName))
-		dirs = append(dirs, filepath.Join(home, ".config", appName))
+		dirs = append(dirs, filepath.Join(home, ".config", "qyvora-jabari"))
+		dirs = append(dirs, filepath.Join(home, ".config", "qyvora", "jabari"))
 	}
 
 	dirs = append(dirs, filepath.Join("/etc", appName))

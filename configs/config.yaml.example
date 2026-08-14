@@ -1,14 +1,16 @@
 # JABARI configuration example
-# Copy to ~/.jabari/config.yaml or $HOME/.config/jabari/config.yaml and edit.
+# Copy to ~/.config/qyvora-jabari/config.yaml (or ~/.qyvora-jabari/config.yaml)
+# and edit. Values here match the keys loaded by internal/config; any key the
+# framework does not read is ignored.
 
 # Pipeline profile: quick | standard | deep | application | device |
 # network | compliance | research
 profile: standard
 
-# Default report/output format: terminal | text | json | yaml | markdown | html
+# Default output format: terminal (alias: table, text) | json | yaml
 output: terminal
 
-# Log level: debug | info | warn | error
+# Logging: level is debug | info | warn | error
 log:
   level: info
 
@@ -16,25 +18,13 @@ log:
 # you control and trust. Equivalent to passing -y on every command.
 authorized: false
 
-# Timeouts
-timeout:
-  device: 10s   # per adb operation
-  connect: 5s   # transport connect
+# Flags: equivalents of the --verbose / --quiet / --json CLI flags.
+verbose: false
+quiet: false
+json: false
 
-# Reporting
+# Reporting: directory reports are written to, and the default format used by
+# `assess --report` / `report` when no --format flag is given.
 report:
   dir: reports
-
-# Enumeration
-enumeration:
-  detail: full          # full | minimal
-  include_system: false
-
-# Validation stage
-validation:
-  enabled: true
-
-# Evidence
-evidence:
-  enabled: true
-  dir: evidence
+  format: terminal   # terminal | json | markdown | html
