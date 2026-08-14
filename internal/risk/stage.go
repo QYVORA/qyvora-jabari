@@ -5,8 +5,8 @@ package risk
 import (
 	"context"
 
-	"github.com/anomalyco/qyvora-jabari/internal/core"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // MaxScore is the total attainable risk score for a target. Scoring is
@@ -20,17 +20,38 @@ type Stage struct{}
 func (s *Stage) Name() string { return "risk" }
 
 // Run attaches a weighted risk score to the session based on the confirmed
-// findings. Scores are informational; they are never a substitute for reading
-// the findings themselves.
+// findings. The score and its derived level are persisted on the session so
+// they survive into JSON, YAML, reports, and machine-readable events. Scores
+// are informational; they are never a substitute for reading the findings
+// themselves.
 func (s *Stage) Run(ctx context.Context, env *core.Env) error {
 	if env.Session == nil {
 		return nil
 	}
 	score := Score(env.Session.Findings)
+	env.Session.RiskScore = score
+	env.Session.RiskLevel = Level(score)
 	if env.Log != nil {
-		env.Log.Info("target risk score: %d/%d", score, MaxScore)
+		env.Log.Info("target risk score: %d/%d (%s)", score, MaxScore, env.Session.RiskLevel)
 	}
 	return nil
+}
+
+// Level maps a 0..100 risk score to a severity label. The buckets match the
+// severity vocabulary used across the report formats.
+func Level(score int) string {
+	switch {
+	case score >= 80:
+		return "critical"
+	case score >= 60:
+		return "high"
+	case score >= 35:
+		return "medium"
+	case score > 0:
+		return "low"
+	default:
+		return "none"
+	}
 }
 
 // Score computes a 0..MaxScore risk figure from findings. Each finding

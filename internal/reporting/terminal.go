@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anomalyco/qyvora-jabari/internal/banner"
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/banner"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // renderTerminal prints a compact summary suitable for stdout. The header is
@@ -22,6 +22,9 @@ func renderTerminal(w io.Writer, s *models.Session) error {
 	writef(w, "  Target:  %s\n", s.TargetID)
 	writef(w, "  Profile: %s\n", s.Profile)
 	writef(w, "  Started: %s\n", s.Start.Format(time.RFC3339))
+	if s.RiskScore > 0 {
+		writef(w, "  Risk:    %d/100 (%s)\n", s.RiskScore, s.RiskLevel)
+	}
 	writef(w, "\n")
 
 	writef(w, "Findings\n")

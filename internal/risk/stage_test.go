@@ -1,9 +1,11 @@
 package risk
 
 import (
+	"context"
 	"testing"
 
-	"github.com/anomalyco/qyvora-jabari/pkg/models"
+	"github.com/QYVORA/qyvora-jabari/internal/core"
+	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 func TestScoreEmpty(t *testing.T) {
@@ -60,5 +62,43 @@ func TestSeverityCounts(t *testing.T) {
 	c.Medium = 3
 	if c.Tally() != 4 {
 		t.Errorf("Tally = %d, want 4", c.Tally())
+	}
+}
+
+// TestStagePersistsScore verifies the computed score and its derived level
+// are persisted onto the session, so they survive into JSON/YAML reports and
+// machine-readable events.
+func TestStagePersistsScore(t *testing.T) {
+	s := models.NewSession()
+	s.AddFinding(&models.Finding{
+		Title:      "critical",
+		Severity:   models.SeverityCritical,
+		Confidence: models.ConfidenceConfirmed,
+		Status:     models.StatusConfirmed,
+	})
+	env := &core.Env{Session: s}
+	st := &Stage{}
+	if err := st.Run(context.Background(), env); err != nil {
+		t.Fatalf("Stage.Run: %v", err)
+	}
+	if s.RiskScore != MaxScore {
+		t.Errorf("Session.RiskScore = %d, want %d", s.RiskScore, MaxScore)
+	}
+	if s.RiskLevel != "critical" {
+		t.Errorf("Session.RiskLevel = %q, want critical", s.RiskLevel)
+	}
+}
+
+func TestLevelBuckets(t *testing.T) {
+	for score, want := range map[int]string{
+		0:   "none",
+		10:  "low",
+		40:  "medium",
+		60:  "high",
+		100: "critical",
+	} {
+		if got := Level(score); got != want {
+			t.Errorf("Level(%d) = %q, want %q", score, got, want)
+		}
 	}
 }

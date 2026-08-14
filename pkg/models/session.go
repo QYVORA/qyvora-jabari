@@ -10,16 +10,22 @@ import (
 // Sessions make assessments resumable, comparable, and automatable (for
 // example "jabari diff session-A session-B").
 type Session struct {
-	ID        string        `json:"id"`
-	TargetID  string        `json:"target_id"`
-	Profile   string        `json:"profile"`
-	Start     time.Time     `json:"start"`
-	End       time.Time     `json:"end,omitempty"`
-	Stages    []string      `json:"stages,omitempty"`
-	Findings  []*Finding    `json:"findings,omitempty"`
-	Apps      []Application `json:"apps,omitempty"`
-	Errors    []string      `json:"errors,omitempty"`
-	OutputDir string        `json:"output_dir,omitempty"`
+	ID       string        `json:"id"`
+	TargetID string        `json:"target_id"`
+	Profile  string        `json:"profile"`
+	Start    time.Time     `json:"start"`
+	End      time.Time     `json:"end,omitempty"`
+	Stages   []string      `json:"stages,omitempty"`
+	Findings []*Finding    `json:"findings,omitempty"`
+	Apps     []Application `json:"apps,omitempty"`
+	Errors   []string      `json:"errors,omitempty"`
+	// RiskScore is the 0..100 target risk figure computed by the risk stage.
+	// It is informational and never a substitute for reading the findings.
+	RiskScore int `json:"risk_score,omitempty"`
+	// RiskLevel is the derived severity label (low, medium, high, critical)
+	// for the overall target risk score.
+	RiskLevel string `json:"risk_level,omitempty"`
+	OutputDir string `json:"output_dir,omitempty"`
 }
 
 // NewSession creates a session with a fresh identifier and the start time
