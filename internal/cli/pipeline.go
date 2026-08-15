@@ -12,6 +12,7 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/events"
 	"github.com/QYVORA/qyvora-jabari/internal/evidence"
 	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/internal/poc"
 	"github.com/QYVORA/qyvora-jabari/internal/rules"
 	"github.com/QYVORA/qyvora-jabari/internal/rules/builtin"
 	"github.com/QYVORA/qyvora-jabari/internal/transport"
@@ -137,6 +138,11 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 	}
 
 	pipe := orchestration.ForProfile(profile)
+	// The poc stage is opt-in: it runs only when explicitly requested on an
+	// authorized target (authorization is enforced by the stage itself).
+	if assessFlags.poc {
+		pipe.Add(&poc.Stage{AllowHighRisk: assessFlags.pocHighRisk})
+	}
 	if err := pipe.Run(ctx, env); err != nil {
 		if emitter != nil {
 			emitter.Fail("jabari", events.Error, map[string]any{"message": err.Error()})

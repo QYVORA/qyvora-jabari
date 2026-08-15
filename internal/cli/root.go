@@ -58,6 +58,8 @@ Usage modes:
   jabari target usb          select a connected device as the current target
   jabari enumerate           enumerate the current target
   jabari analyze             run the rule engine against the current target
+  jabari validate            confirm detected findings on the current target
+  jabari poc                 run proof-of-concept modules against live findings
   jabari report              render the latest assessment report
 
 Every assessment requires explicit target authorization. jabari is scoped,
@@ -139,6 +141,7 @@ func init() {
 	rootCmd.AddCommand(newStageCmd("enumerate", "Inventory applications on the current target", runEnumerate))
 	rootCmd.AddCommand(newStageCmd("analyze", "Evaluate rules against the current target", runAnalyze))
 	rootCmd.AddCommand(newStageCmd("validate", "Confirm detected findings on the current target", runValidate))
+	rootCmd.AddCommand(newPocCmd())
 	rootCmd.AddCommand(newReportCmd())
 
 	rootCmd.SetVersionTemplate(fmt.Sprintf("jabari %s\n", version.String()))

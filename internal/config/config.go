@@ -58,6 +58,10 @@ func Load(cfgFile string) (*viper.Viper, error) {
 	v.SetDefault("audit.enabled", true)
 	v.SetDefault("timeout.seconds", 30)
 	v.SetDefault("enumeration.detail_limit", 100)
+	// poc.high_risk gates proof-of-concept modules that change device state
+	// (for example launching an activity). It defaults off so PoCs stay
+	// read-only unless the operator opts in.
+	v.SetDefault("poc.high_risk", false)
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

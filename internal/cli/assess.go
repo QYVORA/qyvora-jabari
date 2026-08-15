@@ -8,12 +8,15 @@ import (
 
 	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
 	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
+	"github.com/QYVORA/qyvora-jabari/internal/poc"
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
 
 // assessFlags are shared by the assess command.
 var assessFlags struct {
-	profile string
+	profile     string
+	poc         bool
+	pocHighRisk bool
 }
 
 // newAssessCmd builds the "jabari assess" command, the full-pipeline entry
@@ -25,10 +28,16 @@ func newAssessCmd() *cobra.Command {
 		Long: `Run the complete assessment pipeline (discovery, enumeration,
 analysis, validation, risk, reporting) against an authorized target.
 
+The optional poc stage is offensive: it runs proof-of-concept modules
+against live findings and only runs when --poc is passed on an
+authorized target. High-risk PoCs (module: android.exported_activity)
+additionally require --poc-high-risk.
+
 Examples:
   jabari assess usb
   jabari assess usb SERIAL
-  jabari assess ip 192.168.1.50 --profile deep`,
+  jabari assess ip 192.168.1.50 --profile deep
+  jabari assess usb --poc --authorized`,
 	}
 	cmd.PersistentFlags().StringVar(&assessFlags.profile, "profile", "", "assessment profile (quick, standard, deep, application, device, network, compliance, research); default from config")
 	cmd.AddCommand(newAssessUSBCmd())
@@ -75,6 +84,10 @@ func newAssessUSBCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVarP(&authorizationFlags.authorized, "authorized", "y", false,
 		"confirm authorization non-interactively")
+	cmd.Flags().BoolVar(&assessFlags.poc, "poc", false,
+		"run proof-of-concept modules against live findings (requires an authorized target)")
+	cmd.Flags().BoolVar(&assessFlags.pocHighRisk, "poc-high-risk", false,
+		"allow PoC modules that change device state (e.g. android.exported_activity)")
 	return cmd
 }
 
@@ -103,6 +116,10 @@ Only that address is assessed; no surrounding hosts are contacted.`,
 	}
 	cmd.Flags().BoolVarP(&authorizationFlags.authorized, "authorized", "y", false,
 		"confirm authorization non-interactively")
+	cmd.Flags().BoolVar(&assessFlags.poc, "poc", false,
+		"run proof-of-concept modules against live findings (requires an authorized target)")
+	cmd.Flags().BoolVar(&assessFlags.pocHighRisk, "poc-high-risk", false,
+		"allow PoC modules that change device state (e.g. android.exported_activity)")
 	return cmd
 }
 
@@ -125,6 +142,9 @@ func assess(cmd *cobra.Command, t *models.Target) error {
 	// profile, then prints the plan without touching the device.
 	if dryRun {
 		pipe := orchestration.ForProfile(profile)
+		if assessFlags.poc {
+			pipe.Add(&poc.Stage{AllowHighRisk: assessFlags.pocHighRisk})
+		}
 		fmt.Fprintf(cmd.OutOrStdout(), "dry run: no commands executed\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "  target:   %s (%s)\n", t.DisplayName(), t.Type)
 		fmt.Fprintf(cmd.OutOrStdout(), "  profile:  %s\n", profile)

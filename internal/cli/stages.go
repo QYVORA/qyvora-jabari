@@ -9,6 +9,7 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/core"
 	"github.com/QYVORA/qyvora-jabari/internal/discovery"
 	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
+	"github.com/QYVORA/qyvora-jabari/internal/poc"
 	"github.com/QYVORA/qyvora-jabari/internal/validation"
 )
 
@@ -93,4 +94,40 @@ func runAnalyze(ctx context.Context) error {
 // runValidate implements "jabari validate".
 func runValidate(ctx context.Context) error {
 	return runSingleStage(ctx, &validation.Stage{})
+}
+
+// pocFlags are shared by the standalone "poc" command.
+var pocFlags struct {
+	highRisk     bool
+	moduleFilter []string
+}
+
+// pocFilter builds the engine module filter from the flag value. An empty
+// filter means every registered module runs.
+func pocFilter() map[string]bool {
+	if len(pocFlags.moduleFilter) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(pocFlags.moduleFilter))
+	for _, id := range pocFlags.moduleFilter {
+		out[id] = true
+	}
+	return out
+}
+
+// newPocCmd implements "jabari poc": run proof-of-concept modules against the
+// current target. The stage enforces target authorization itself and returns
+// exit code 3 when the gate is not satisfied.
+func newPocCmd() *cobra.Command {
+	cmd := newStageCmd("poc", "Run proof-of-concept modules against the current target", runPoc)
+	cmd.Flags().BoolVar(&pocFlags.highRisk, "poc-high-risk", false,
+		"allow PoC modules that change device state (e.g. android.exported_activity)")
+	cmd.Flags().StringSliceVar(&pocFlags.moduleFilter, "poc-module", nil,
+		"run only the named PoC module(s); repeatable")
+	return cmd
+}
+
+// runPoc implements the standalone poc stage command.
+func runPoc(ctx context.Context) error {
+	return runSingleStage(ctx, &poc.Stage{AllowHighRisk: pocFlags.highRisk, ModuleFilter: pocFilter()})
 }
