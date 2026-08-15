@@ -1,6 +1,9 @@
 package models
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestSeverityParseAndWeights(t *testing.T) {
 	if ParseSeverity("High") != SeverityHigh {
@@ -97,5 +100,27 @@ func TestDeviceSummary(t *testing.T) {
 	var nilD *DeviceInfo
 	if nilD.Summary() != "no device information" {
 		t.Error("nil device summary mismatch")
+	}
+}
+
+func TestPocRunSerialization(t *testing.T) {
+	s := NewSession()
+	f := &Finding{ID: "fnd-1"}
+	s.AddFinding(f)
+	s.AddPoc(&PocRun{
+		ID: "poc-1", Module: "android.run_as_debuggable", FindingID: f.ID,
+		Status: PocProven, Risk: "medium", Summary: "proved",
+		Evidence: []string{"run-as com.x id -> uid=1"},
+	})
+	raw, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var back Session
+	if err := json.Unmarshal(raw, &back); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(back.Pocs) != 1 || !back.Pocs[0].Proven() || back.Pocs[0].Module != "android.run_as_debuggable" {
+		t.Errorf("round-trip pocs = %+v", back.Pocs)
 	}
 }

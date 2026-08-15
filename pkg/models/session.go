@@ -19,6 +19,9 @@ type Session struct {
 	Findings []*Finding    `json:"findings,omitempty"`
 	Apps     []Application `json:"apps,omitempty"`
 	Errors   []string      `json:"errors,omitempty"`
+	// Pocs records every proof-of-concept module execution performed against
+	// the session's findings. It is empty unless the poc stage ran.
+	Pocs []*PocRun `json:"pocs,omitempty"`
 	// RiskScore is the 0..100 target risk figure computed by the risk stage.
 	// It is informational and never a substitute for reading the findings.
 	RiskScore int `json:"risk_score,omitempty"`
@@ -44,6 +47,11 @@ func NewSession() *Session {
 func (s *Session) AddFinding(f *Finding) {
 	f.SessionID = s.ID
 	s.Findings = append(s.Findings, f)
+}
+
+// AddPoc records a proof-of-concept run against the session.
+func (s *Session) AddPoc(run *PocRun) {
+	s.Pocs = append(s.Pocs, run)
 }
 
 // Finish marks the session end time and records the ordered stage list.
