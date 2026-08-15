@@ -55,6 +55,37 @@ func renderTerminal(w io.Writer, s *models.Session) error {
 	if flagged == 0 {
 		writef(w, "No critical or high findings.\n")
 	}
+
+	if len(s.Pocs) > 0 {
+		writef(w, "\n")
+		writef(w, "PoC runs\n")
+		var proven, notProven, skipped, errors int
+		for _, p := range s.Pocs {
+			if p == nil {
+				continue
+			}
+			switch p.Status {
+			case models.PocProven:
+				proven++
+			case models.PocNotProven:
+				notProven++
+			case models.PocSkipped:
+				skipped++
+			default:
+				errors++
+			}
+		}
+		writef(w, "  %-14s %d\n", "Proven", proven)
+		writef(w, "  %-14s %d\n", "Not proven", notProven)
+		writef(w, "  %-14s %d\n", "Skipped", skipped)
+		writef(w, "  %-14s %d\n", "Errors", errors)
+		for _, p := range s.Pocs {
+			if p == nil || p.Status != models.PocProven {
+				continue
+			}
+			writef(w, "  [PROVEN] %s %s\n", p.Module, p.Summary)
+		}
+	}
 	return nil
 }
 

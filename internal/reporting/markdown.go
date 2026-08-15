@@ -77,6 +77,9 @@ func renderMarkdown(w io.Writer, s *models.Session) error {
 		if f.Recommendation != "" {
 			bw.kv("Recommendation", f.Recommendation)
 		}
+		if f.Exploitability != "" {
+			bw.kv("Exploitability", f.Exploitability)
+		}
 		if len(f.Evidence) > 0 {
 			bw.text("**Evidence:**")
 			for _, ev := range f.Evidence {
@@ -84,6 +87,21 @@ func renderMarkdown(w io.Writer, s *models.Session) error {
 					bw.codeBlock(ev.Source + ": " + ev.Content)
 				}
 			}
+		}
+	}
+
+	if len(s.Pocs) > 0 {
+		bw.section("PoC Runs")
+		bw.text("Each row is one proof-of-concept module execution against a finding. " +
+			"`proven` demonstrates the weakness on the live target.")
+		bw.text("| module | finding | status | risk | result |")
+		bw.text("| --- | --- | --- | --- | --- |")
+		for _, p := range s.Pocs {
+			if p == nil {
+				continue
+			}
+			bw.text("| " + p.Module + " | " + p.FindingID + " | " + string(p.Status) + " | " +
+				p.Risk + " | " + p.Summary + " |")
 		}
 	}
 	return nil

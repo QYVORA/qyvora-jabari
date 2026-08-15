@@ -69,6 +69,21 @@ func renderHTML(w io.Writer, s *models.Session) error {
 		}
 	}
 
+	if len(s.Pocs) > 0 {
+		writef(w, "<h2>PoC Runs</h2>\n")
+		writef(w, "<p>Each row is one proof-of-concept module execution against a finding.</p>\n")
+		writef(w, "<table><tr><th>Module</th><th>Finding</th><th>Status</th><th>Risk</th><th>Result</th></tr>\n")
+		for _, p := range s.Pocs {
+			if p == nil {
+				continue
+			}
+			writef(w, "<tr><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+				html.EscapeString(p.Module), html.EscapeString(p.FindingID), html.EscapeString(string(p.Status)),
+				html.EscapeString(p.Risk), html.EscapeString(p.Summary))
+		}
+		writef(w, "</table>\n")
+	}
+
 	writef(w, "</body>\n</html>\n")
 	return nil
 }
