@@ -59,3 +59,38 @@ func TestAssessDryRunStillRequiresAuthorization(t *testing.T) {
 		t.Fatal("dry-run without authorization must fail")
 	}
 }
+
+func TestAssessDryRunPocStageOptIn(t *testing.T) {
+	newAssessEnv(t)
+	dryRun = true
+
+	cmd := newAssessIPCmd()
+	authorizationFlags.authorized = true
+	cmd.SetArgs([]string{"192.168.1.50", "--poc", "--poc-high-risk"})
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("assess ip --poc --dry-run: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "- poc") {
+		t.Errorf("dry-run plan missing poc stage:\n%s", out)
+	}
+}
+
+func TestAssessDryRunPocStageNotDefault(t *testing.T) {
+	newAssessEnv(t)
+	dryRun = true
+
+	cmd := newAssessIPCmd()
+	authorizationFlags.authorized = true
+	cmd.SetArgs([]string{"192.168.1.50"})
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("assess ip --dry-run: %v", err)
+	}
+	if strings.Contains(buf.String(), "- poc") {
+		t.Errorf("dry-run plan must not include poc stage by default:\n%s", buf.String())
+	}
+}

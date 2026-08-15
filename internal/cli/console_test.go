@@ -39,6 +39,9 @@ func TestConsoleExecDispatch(t *testing.T) {
 		{"target list", ""},
 		{"get profile", ""},
 		{"set profile deep", ""},
+		{"poc", "no target selected"},
+		{"poc --poc-high-risk", "no target selected"},
+		{"poc --bogus", "unexpected argument"},
 		{"unknowncmd", "unknown command"},
 		{"target bogus", "unknown target subcommand"},
 	}

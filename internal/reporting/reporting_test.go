@@ -178,3 +178,61 @@ func TestRenderTerminalCarriesRiskScore(t *testing.T) {
 		t.Error("terminal report missing the risk score line")
 	}
 }
+
+func TestRenderPocRuns(t *testing.T) {
+	s := sampleSession()
+	s.AddPoc(&models.PocRun{
+		ID:        "poc-1",
+		Module:    "android.run_as_debuggable",
+		FindingID: "fnd-1",
+		Status:    models.PocProven,
+		Risk:      "medium",
+		Summary:   "run-as executed as the application user",
+		Evidence:  []string{"run-as com.example id -> uid=10001"},
+	})
+	s.AddPoc(&models.PocRun{
+		ID:        "poc-2",
+		Module:    "android.exported_activity",
+		FindingID: "fnd-1",
+		Status:    models.PocSkipped,
+		Risk:      "high",
+		Summary:   "high-risk PoC requires explicit opt-in",
+	})
+
+	for _, format := range []Format{FormatTerminal, FormatMarkdown, FormatHTML, FormatJSON} {
+		var buf bytes.Buffer
+		w := &Writer{Format: format, Out: &buf}
+		if err := w.Render(context.Background(), s); err != nil {
+			t.Fatalf("Render(%s): %v", format, err)
+		}
+		out := buf.String()
+		for _, want := range []string{"android.run_as_debuggable", "proven"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("%s output missing %q", format, want)
+			}
+		}
+	}
+
+	if term := renderPoc(t, s, FormatTerminal); !strings.Contains(term, "Proven") {
+		t.Errorf("terminal PoC summary missing Proven count: %q", term)
+	}
+	if md := renderPoc(t, s, FormatMarkdown); !strings.Contains(md, "## PoC Runs") {
+		t.Errorf("markdown missing PoC Runs section: %q", md)
+	}
+	if html := renderPoc(t, s, FormatHTML); !strings.Contains(html, "<h2>PoC Runs</h2>") {
+		t.Errorf("html missing PoC Runs section: %q", html)
+	}
+	if json := renderPoc(t, s, FormatJSON); !strings.Contains(json, `"pocs"`) {
+		t.Errorf("json missing pocs array: %q", json)
+	}
+}
+
+func renderPoc(t *testing.T, s *models.Session, format Format) string {
+	t.Helper()
+	var buf bytes.Buffer
+	w := &Writer{Format: format, Out: &buf}
+	if err := w.Render(context.Background(), s); err != nil {
+		t.Fatalf("Render(%s): %v", format, err)
+	}
+	return buf.String()
+}
