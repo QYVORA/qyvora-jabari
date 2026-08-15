@@ -141,6 +141,7 @@ Key findings
 | [Targets](docs/targets.md) | USB and network target modes |
 | [Configuration](docs/configuration.md) | Config file and environment |
 | [Rules](docs/rules.md) | Rule engine and the AND-xxx rule set |
+| [PoC modules](docs/poc.md) | Proof-of-concept module system, safety, and events |
 | [Validation](docs/validation.md) | How findings are confirmed |
 | [Evidence](docs/evidence.md) | Evidence collection and storage |
 | [Reporting](docs/reporting.md) | Report formats |

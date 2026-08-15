@@ -35,6 +35,7 @@ internal/risk/         severity × confidence scoring
 internal/evidence/     evidence store (hashing, storage)
 internal/reporting/    renderers: terminal, json, markdown, html
 internal/rules/        rule interface + registry + builtin AND set
+internal/poc/          PoC module interface, registry, engine, stage
 internal/orchestration/ profile builder + pipeline runner
 internal/transport/    Transport interface, USB + network impls, factory
 pkg/adb/               thin, injectable adb binary wrapper
@@ -75,6 +76,11 @@ it:
 ```
 discovery → enumeration → analysis → validation → risk → reporting
 ```
+
+An optional final stage, `poc`, is appended only when explicitly requested
+(`--poc` on `assess` or the standalone `jabari poc` command). It reproduces
+confirmed findings against the authorized target and is gated by target
+authorization and per-module risk; see [PoC Modules](poc.md).
 
 - Each stage is timed and recorded on the session.
 - A stage error fails the session with a non-zero exit code and a recorded

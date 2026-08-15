@@ -28,6 +28,7 @@ jabari discover               run the discovery stage
 jabari enumerate              run the enumeration stage
 jabari analyze                run the analysis stage
 jabari validate               run the validation stage
+jabari poc                    run PoC modules against the current target
 jabari report                 render a saved session
 jabari version                print version
 jabari completion <shell>     generate completion scripts
@@ -42,6 +43,7 @@ sequence a workflow without repeating the `jabari` prefix:
 ```
 jabari > target usb
 jabari > assess
+jabari > poc --poc-high-risk
 jabari > report list
 jabari > help
 jabari > quit
@@ -69,6 +71,10 @@ Flags:
 
 - `--profile <name>` — `quick|standard|deep|application|device|network|compliance|research` (default `standard`)
 - `-y, --yes` — non-interactive authorization
+- `--poc` — append the proof-of-concept stage to the pipeline (see
+  [PoC Modules](poc.md))
+- `--poc-high-risk` — allow PoC modules that change device state (e.g.
+  `android.exported_activity`)
 - `--json` / `-o <fmt>` — report format
 - `--dry-run` — validate the target, the authorization decision and the
   profile, then print the stage plan without connecting to the device
@@ -101,6 +107,21 @@ Evaluates all enabled rules against the current target and apps.
 
 Re-runs non-destructive confirmation checks for each open finding and updates
 their `confirmed` status.
+
+## `poc`
+
+Runs proof-of-concept modules against the current target and records the
+results (`proven` / `not-proven` / `skipped` / `error`) on the session.
+Refuses to run unless the target is authorized (exit code `3`).
+
+```sh
+jabari poc                          # run all eligible modules (authorized target)
+jabari poc --poc-high-risk          # also allow state-changing modules
+jabari poc --poc-module android.world_readable_data
+```
+
+See [PoC Modules](poc.md) for the module catalog, safety gates and event
+schema.
 
 ## `report`
 
@@ -140,8 +161,9 @@ directly. CLI flags take precedence over the environment.
 `stderr`, or a file path (created/truncated mode 0600). Events carry
 `schema_version`, `timestamp`, `execution_id`, `framework`, `level`, `event`
 and `data`, covering the run lifecycle (`run.started`, `run.completed`),
-pipeline stages, findings, warnings and errors. The schema is identical across
-the QYVORA frameworks.
+pipeline stages, findings, warnings and errors. PoC modules additionally emit
+`module.started` / `module.completed` lifecycle events whose `data` carries
+the full `PocRun`. The schema is identical across the QYVORA frameworks.
 
 ## Exit codes
 
@@ -150,3 +172,4 @@ the QYVORA frameworks.
 | 0 | success |
 | 1 | runtime, target/transport, or assessment error |
 | 2 | usage, authorization, configuration, or target-selection error |
+| 3 | authorization declined (PoC stage) |
