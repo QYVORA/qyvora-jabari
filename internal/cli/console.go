@@ -214,6 +214,8 @@ func (c *jabariConsole) exec(line string) (bool, error) {
 		return false, runAnalyze(c.ctx)
 	case "validate":
 		return false, runValidate(c.ctx)
+	case "poc":
+		return false, c.cmdPoc(args)
 	case "report", "sessions":
 		return false, c.cmdReport(args)
 	case "set":
@@ -266,6 +268,7 @@ func (c *jabariConsole) help() {
 			{"enumerate", "inventory applications on the current target"},
 			{"analyze", "evaluate rules against the current target"},
 			{"validate", "confirm detected findings on the current target"},
+			{"poc [--poc-high-risk]", "run proof-of-concept modules on the authorized target"},
 		}},
 		{"Reporting", [][2]string{
 			{"report [session-id]", "render a saved assessment report"},
@@ -534,6 +537,26 @@ func (c *jabariConsole) assessTarget(args []string, profile *string) (*models.Ta
 	default:
 		return nil, fmt.Errorf("unknown assess target %q (try 'assess usb' or 'assess ip <addr>')", args[0])
 	}
+}
+
+// cmdPoc implements the "poc" console command. It runs the PoC stage against
+// the current authorized target; the stage itself enforces authorization and
+// returns exit code 3 when the gate is not satisfied.
+func (c *jabariConsole) cmdPoc(args []string) error {
+	pocFlags.highRisk = false
+	pocFlags.moduleFilter = nil
+	for _, a := range args {
+		switch {
+		case a == "--poc-high-risk":
+			pocFlags.highRisk = true
+		case strings.HasPrefix(a, "--poc-module="):
+			pocFlags.moduleFilter = append(pocFlags.moduleFilter,
+				strings.Split(strings.TrimPrefix(a, "--poc-module="), ",")...)
+		default:
+			return errs.NewExitError(2, "unexpected argument "+a+" (see 'help')")
+		}
+	}
+	return runPoc(c.ctx)
 }
 
 // requireTarget mirrors the one-shot requireTarget helper for the console.
