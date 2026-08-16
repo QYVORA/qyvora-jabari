@@ -79,7 +79,9 @@ func (s *Stage) Run(ctx context.Context, env *core.Env) error {
 			apps[i] = s.appDetailOrName(ctx, env, pkg)
 		}
 	} else {
-		s.detailConcurrent(ctx, env, packages, apps, workers)
+		if err := s.detailConcurrent(ctx, env, packages, apps, workers); err != nil {
+			return err
+		}
 	}
 
 	env.Apps = apps
@@ -89,13 +91,15 @@ func (s *Stage) Run(ctx context.Context, env *core.Env) error {
 
 // detailConcurrent fills apps with per-package metadata using a bounded pool
 // of workers. Each package is written to its own slice slot, so no shared
-// state needs locking beyond the worker accounting.
-func (s *Stage) detailConcurrent(ctx context.Context, env *core.Env, packages []string, apps []models.Application, workers int) {
+// state needs locking beyond the worker accounting. In-flight workers are
+// always joined before returning so the apps slice is stable.
+func (s *Stage) detailConcurrent(ctx context.Context, env *core.Env, packages []string, apps []models.Application, workers int) error {
 	sem := make(chan struct{}, workers)
 	var wg sync.WaitGroup
 	for i, pkg := range packages {
 		if err := ctx.Err(); err != nil {
-			return
+			wg.Wait()
+			return err
 		}
 		wg.Add(1)
 		sem <- struct{}{}
@@ -106,6 +110,7 @@ func (s *Stage) detailConcurrent(ctx context.Context, env *core.Env, packages []
 		}(i, pkg)
 	}
 	wg.Wait()
+	return nil
 }
 
 // appDetailOrName returns the parsed detail for a package, or a name-only

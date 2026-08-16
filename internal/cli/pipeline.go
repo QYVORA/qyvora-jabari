@@ -22,7 +22,7 @@ import (
 // newAssessmentEnv builds the shared environment for an assessment run:
 // transport, session, evidence store, and a rule registry with the builtin
 // rules registered. The returned cleanup function disconnects the transport.
-func newAssessmentEnv(ctx context.Context, t *models.Target) (*core.Env, func(), error) {
+func newAssessmentEnv(ctx context.Context, t *models.Target, profile orchestration.Profile) (*core.Env, func(), error) {
 	tr, err := transport.NewForTarget(t, timeout)
 	if err != nil {
 		return nil, func() {}, err
@@ -48,7 +48,7 @@ func newAssessmentEnv(ctx context.Context, t *models.Target) (*core.Env, func(),
 
 	sess := models.NewSession()
 	sess.TargetID = t.ID
-	sess.Profile = cfg.GetString("profile")
+	sess.Profile = string(profile)
 
 	env := &core.Env{
 		Target:    t,
@@ -112,7 +112,7 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 		return nil, err
 	}
 
-	env, cleanup, err := newAssessmentEnv(ctx, t)
+	env, cleanup, err := newAssessmentEnv(ctx, t, profile)
 	if err != nil {
 		return nil, err
 	}

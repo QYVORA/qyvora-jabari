@@ -9,6 +9,7 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/core"
 	"github.com/QYVORA/qyvora-jabari/internal/discovery"
 	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
+	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
 	"github.com/QYVORA/qyvora-jabari/internal/poc"
 	"github.com/QYVORA/qyvora-jabari/internal/validation"
 )
@@ -36,7 +37,7 @@ func runSingleStage(ctx context.Context, stage core.Stage) error {
 	if err != nil {
 		return err
 	}
-	env, cleanup, err := newAssessmentEnv(ctx, t)
+	env, cleanup, err := newAssessmentEnv(ctx, t, orchestration.Profile(cfg.GetString("profile")))
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func runAnalyze(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	env, cleanup, err := newAssessmentEnv(ctx, t)
+	env, cleanup, err := newAssessmentEnv(ctx, t, orchestration.Profile(cfg.GetString("profile")))
 	if err != nil {
 		return err
 	}

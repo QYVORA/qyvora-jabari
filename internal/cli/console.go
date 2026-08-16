@@ -45,7 +45,7 @@ func runConsole(ctx context.Context) error {
 		return c.runPlain()
 	}
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       c.ui.Prompt("jabariλ"),
+		Prompt:       c.ui.Prompt("jabari"),
 		HistoryFile:  c.historyPath(),
 		AutoComplete: readline.NewPrefixCompleter(c.completer()...),
 	})
@@ -458,7 +458,8 @@ func (c *jabariConsole) selectTarget(t *models.Target) error {
 // helper) so targets.Set and the pipeline's requireTarget accept it, and the
 // shared authorization flag is set so later confirms are skipped.
 func (c *jabariConsole) confirmAuth(t *models.Target) error {
-	if authorizationFlags.authorized || cfg.GetBool("authorized") {
+	if authorizationFlags.authorized || cfg.GetBool("authorized") || strings.EqualFold(os.Getenv("QYVORA_AUTHORIZED"), "true") {
+		t.Auth = granted(t)
 		return nil
 	}
 	if !c.ui.Enabled() || c.rl == nil {
@@ -475,7 +476,7 @@ func (c *jabariConsole) confirmAuth(t *models.Target) error {
 	fmt.Fprintf(c.out, "  %s %s\n", c.ui.BoldWhite("Scope:"), c.ui.DimWhite("authorized assessment only, scoped to this target"))
 	c.rl.SetPrompt("  Confirm authorization? [y/N] ")
 	answer, err := c.rl.Readline()
-	c.rl.SetPrompt(c.ui.Prompt("jabariλ"))
+	c.rl.SetPrompt(c.ui.Prompt("jabari"))
 	c.resumeSpinner()
 	if err != nil {
 		return err
@@ -532,6 +533,9 @@ func (c *jabariConsole) assessTarget(args []string, profile *string) (*models.Ta
 	case "ip":
 		if len(args) < 2 {
 			return nil, errors.New("usage: assess ip <addr>")
+		}
+		if len(args) > 2 {
+			return nil, fmt.Errorf("usage: assess ip <addr> — extra arguments ignored, got %q", strings.Join(args[1:], " "))
 		}
 		return c.buildIPTarget(args[1])
 	default:
