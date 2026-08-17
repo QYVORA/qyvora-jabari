@@ -34,3 +34,28 @@ func NewForTarget(t *models.Target, timeout time.Duration) (Transport, error) {
 		return nil, fmt.Errorf("%w: target type %q", ErrUnsupported, t.Type)
 	}
 }
+
+// NewNativeForTarget builds a native transport (no adb binary dependency)
+// Currently only supports network targets. USB support requires libusb.
+func NewNativeForTarget(t *models.Target) (Transport, error) {
+	if t == nil {
+		return nil, fmt.Errorf("cannot build transport for nil target")
+	}
+	switch t.Type {
+	case models.TargetNetwork:
+		port := 5555
+		if t.Address != "" {
+			if _, p, err := net.SplitHostPort(t.Address); err == nil {
+				var parsed int
+				if _, err := fmt.Sscanf(p, "%d", &parsed); err == nil {
+					port = parsed
+				}
+			}
+		}
+		return NewNativeNetworkTransport(t.Address, port)
+	case models.TargetUSB:
+		return nil, fmt.Errorf("native USB transport not yet implemented, use legacy transport")
+	default:
+		return nil, fmt.Errorf("%w: target type %q", ErrUnsupported, t.Type)
+	}
+}
