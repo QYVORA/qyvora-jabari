@@ -134,6 +134,7 @@ func init() {
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newCompletionCmd())
+	rootCmd.AddCommand(newCapabilitiesCmd())
 	rootCmd.AddCommand(newToolsCmd())
 	rootCmd.AddCommand(newTargetCmd())
 	rootCmd.AddCommand(newAssessCmd())

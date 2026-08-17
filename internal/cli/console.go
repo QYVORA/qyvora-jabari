@@ -202,6 +202,8 @@ func (c *jabariConsole) exec(line string) (bool, error) {
 		c.printCwd()
 	case "tools":
 		c.cmdTools()
+	case "capabilities", "caps":
+		c.cmdCapabilities()
 	case "target":
 		return false, c.cmdTarget(args)
 	case "assess", "run":
