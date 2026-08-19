@@ -50,7 +50,9 @@ func TestFindingAddEvidence(t *testing.T) {
 }
 
 func TestHashContentDeterministic(t *testing.T) {
-	if HashContent([]byte("abc")) != HashContent([]byte("abc")) {
+	first := HashContent([]byte("abc"))
+	second := HashContent([]byte("abc"))
+	if first != second {
 		t.Error("hash must be deterministic")
 	}
 	if HashContent([]byte("abc")) == HashContent([]byte("abd")) {
