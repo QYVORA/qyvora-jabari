@@ -59,7 +59,7 @@ one device is connected the serial may be omitted.`,
 			if err := targets.Set(authorized); err != nil {
 				return errors.NewExitError(2, "setting target: "+err.Error())
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (usb:%s)\n", t.Name, serial)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (usb:%s)\n", t.Name, serial)
 			return nil
 		},
 	}
@@ -127,7 +127,7 @@ surrounding subnet.`,
 			if err := targets.Set(authorized); err != nil {
 				return errors.NewExitError(2, "setting target: "+err.Error())
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (network:%s)\n", t.Name, addr)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (network:%s)\n", t.Name, addr)
 			return nil
 		},
 	}
@@ -148,12 +148,12 @@ func newTargetShowCmd() *cobra.Command {
 			if t.Authorized() {
 				status = "authorized"
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Target: %s\n", t.DisplayName())
-			fmt.Fprintf(cmd.OutOrStdout(), "  ID:     %s\n", t.ID)
-			fmt.Fprintf(cmd.OutOrStdout(), "  Type:   %s\n", t.Type)
-			fmt.Fprintf(cmd.OutOrStdout(), "  Status: %s\n", status)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Target: %s\n", t.DisplayName())
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  ID:     %s\n", t.ID)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  Type:   %s\n", t.Type)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  Status: %s\n", status)
 			if t.Device != nil {
-				fmt.Fprintf(cmd.OutOrStdout(), "  Device: %s\n", t.Device.Summary())
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  Device: %s\n", t.Device.Summary())
 			}
 			return nil
 		},
@@ -169,11 +169,11 @@ func newTargetListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			list := targets.List()
 			if len(list) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No targets.")
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No targets.")
 				return nil
 			}
 			for _, t := range list {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s  %-10s  %-30s  %s\n",
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s  %-10s  %-30s  %s\n",
 					t.ID, t.Type, t.DisplayName(), authStatus(t))
 			}
 			return nil

@@ -102,17 +102,30 @@ type propRef struct {
 	value string
 }
 
-// propertyEvidence extracts "ro.*" system property references from a
-// finding's evidence. Only configuration evidence with a property-style
-// source is eligible for live re-validation.
+// propertyEvidence extracts system property references from a finding's
+// evidence. Configuration evidence whose source matches a known re-checkable
+// prefix is eligible for live re-validation.
 func propertyEvidence(f *models.Finding) []propRef {
+	allowed := func(source string) bool {
+		if strings.HasPrefix(source, "ro.") {
+			return true
+		}
+		if strings.HasPrefix(source, "android:") {
+			return true
+		}
+		switch source {
+		case "usesCleartextTraffic", "permissions", "root_access":
+			return true
+		}
+		return false
+	}
 	var out []propRef
 	for _, ev := range f.Evidence {
 		if ev.Kind != models.KindConfiguration {
 			continue
 		}
 		key := strings.TrimSpace(ev.Source)
-		if !strings.HasPrefix(key, "ro.") {
+		if !allowed(key) {
 			continue
 		}
 		out = append(out, propRef{key: key, value: strings.TrimSpace(ev.Content)})
