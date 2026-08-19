@@ -34,13 +34,13 @@ func WrapExitError(code int, msg string, cause error) *ExitError {
 
 func Fatalf(code int, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	color.New(color.FgRed, color.Bold).Fprintf(os.Stderr, "Error: ")
+	_, _ = color.New(color.FgRed, color.Bold).Fprintf(os.Stderr, "Error: ")
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(code)
 }
 
 func Fatalln(code int, msg string) {
-	color.New(color.FgRed, color.Bold).Fprintf(os.Stderr, "Error: ")
+	_, _ = color.New(color.FgRed, color.Bold).Fprintf(os.Stderr, "Error: ")
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(code)
 }

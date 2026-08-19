@@ -70,7 +70,7 @@ func (p *Printer) Print(v any) {
 	case FormatYAML:
 		p.printYAML(v)
 	default:
-		fmt.Fprintln(p.writer, v)
+		_, _ = fmt.Fprintln(p.writer, v)
 	}
 }
 
@@ -107,11 +107,11 @@ func (p *Printer) PrintTable(header []string, rows [][]string) {
 
 	for i, h := range header {
 		if i > 0 {
-			fmt.Fprint(p.writer, "  ")
+			_, _ = fmt.Fprint(p.writer, "  ")
 		}
-		headerColor.Fprintf(p.writer, "%-*s", colWidths[i], h)
+		_, _ = headerColor.Fprintf(p.writer, "%-*s", colWidths[i], h)
 	}
-	fmt.Fprintln(p.writer)
+	_, _ = fmt.Fprintln(p.writer)
 
 	totalWidth := 0
 	for i, w := range colWidths {
@@ -120,20 +120,20 @@ func (p *Printer) PrintTable(header []string, rows [][]string) {
 		}
 		totalWidth += w
 	}
-	fmt.Fprintln(p.writer, strings.Repeat("─", totalWidth))
+	_, _ = fmt.Fprintln(p.writer, strings.Repeat("─", totalWidth))
 
 	for idx, row := range rows {
 		for i, cell := range row {
 			if i > 0 {
-				fmt.Fprint(p.writer, "  ")
+				_, _ = fmt.Fprint(p.writer, "  ")
 			}
 			if p.color && idx%2 == 1 {
-				altRowColor.Fprintf(p.writer, "%-*s", colWidths[i], cell)
+				_, _ = altRowColor.Fprintf(p.writer, "%-*s", colWidths[i], cell)
 			} else {
-				fmt.Fprintf(p.writer, "%-*s", colWidths[i], cell)
+				_, _ = fmt.Fprintf(p.writer, "%-*s", colWidths[i], cell)
 			}
 		}
-		fmt.Fprintln(p.writer)
+		_, _ = fmt.Fprintln(p.writer)
 	}
 }
 
@@ -151,5 +151,5 @@ func (p *Printer) printYAML(v any) {
 		fmt.Fprintf(os.Stderr, "yaml error: %v\n", err)
 		return
 	}
-	p.writer.Write(out)
+	_, _ = p.writer.Write(out)
 }

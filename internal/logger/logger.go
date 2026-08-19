@@ -103,8 +103,8 @@ func (l *Logger) log(level Level, format string, args ...any) {
 		c = color.New(color.FgGreen)
 	}
 
-	c.Fprintf(l.writer, "[%s] ", prefix)
-	fmt.Fprintln(l.writer, msg)
+	_, _ = c.Fprintf(l.writer, "[%s] ", prefix)
+	_, _ = fmt.Fprintln(l.writer, msg)
 }
 
 func (l *Logger) Debug(format string, args ...any) { l.log(LevelDebug, format, args...) }
@@ -133,30 +133,30 @@ func (l *Logger) PrintTable(header []string, rows [][]string) {
 	sep := func() {
 		for i, w := range colWidths {
 			if i > 0 {
-				fmt.Fprint(l.writer, "-+-")
+				_, _ = fmt.Fprint(l.writer, "-+-")
 			}
-			fmt.Fprint(l.writer, strings.Repeat("-", w))
+			_, _ = fmt.Fprint(l.writer, strings.Repeat("-", w))
 		}
-		fmt.Fprintln(l.writer)
+		_, _ = fmt.Fprintln(l.writer)
 	}
 
 	for i, h := range header {
 		if i > 0 {
-			fmt.Fprint(l.writer, " | ")
+			_, _ = fmt.Fprint(l.writer, " | ")
 		}
-		color.New(color.FgWhite, color.Bold).Fprintf(l.writer, "%-*s", colWidths[i], h)
+		_, _ = color.New(color.FgWhite, color.Bold).Fprintf(l.writer, "%-*s", colWidths[i], h)
 	}
-	fmt.Fprintln(l.writer)
+	_, _ = fmt.Fprintln(l.writer)
 	sep()
 
 	for _, row := range rows {
 		for i, cell := range row {
 			if i > 0 {
-				fmt.Fprint(l.writer, " | ")
+				_, _ = fmt.Fprint(l.writer, " | ")
 			}
-			fmt.Fprintf(l.writer, "%-*s", colWidths[i], cell)
+			_, _ = fmt.Fprintf(l.writer, "%-*s", colWidths[i], cell)
 		}
-		fmt.Fprintln(l.writer)
+		_, _ = fmt.Fprintln(l.writer)
 	}
 }
 
@@ -169,5 +169,5 @@ func (l *Logger) PrintJSON(v any) {
 		l.Error("json marshal: %v", err)
 		return
 	}
-	fmt.Fprintln(l.writer, string(data))
+	_, _ = fmt.Fprintln(l.writer, string(data))
 }
