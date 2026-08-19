@@ -44,7 +44,7 @@ func (t *NativeNetworkTransport) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("target %s unreachable: %w", t.addr, err)
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	// Perform native ADB handshake
 	if err := t.client.Connect(ctx); err != nil {

@@ -51,7 +51,7 @@ func (t *NetworkTransport) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("target %s unreachable: %w", t.addr, err)
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
