@@ -145,13 +145,13 @@ func assess(cmd *cobra.Command, t *models.Target) error {
 		if assessFlags.poc {
 			pipe.Add(&poc.Stage{AllowHighRisk: assessFlags.pocHighRisk})
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "dry run: no commands executed\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "  target:   %s (%s)\n", t.DisplayName(), t.Type)
-		fmt.Fprintf(cmd.OutOrStdout(), "  profile:  %s\n", profile)
-		fmt.Fprintf(cmd.OutOrStdout(), "  authorized: %t\n", authorized != nil)
-		fmt.Fprintf(cmd.OutOrStdout(), "  stages:\n")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "dry run: no commands executed\n")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  target:   %s (%s)\n", t.DisplayName(), t.Type)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  profile:  %s\n", profile)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  authorized: %t\n", authorized != nil)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  stages:\n")
 		for _, st := range pipe.Stages() {
-			fmt.Fprintf(cmd.OutOrStdout(), "    - %s\n", st.Name())
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    - %s\n", st.Name())
 		}
 		return nil
 	}

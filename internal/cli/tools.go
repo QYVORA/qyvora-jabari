@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -108,18 +106,4 @@ func (c *jabariConsole) cmdTools() {
 	c.ui.Section("Android assessment toolchain")
 	c.ui.Table([]string{"tool", "status", "purpose", "path", "kali package"}, rows)
 	c.ui.Status(">", "install missing tools with: apt install android-tools-adb apktool jadx frida-tools objection drozer")
-}
-
-// toolsSummary is a compact one-line hint for the HUD and prompts.
-func toolsSummary() string {
-	var missing []string
-	for _, st := range detectTools() {
-		if !st.Installed {
-			missing = append(missing, st.Name)
-		}
-	}
-	if len(missing) == 0 {
-		return "toolchain complete"
-	}
-	return fmt.Sprintf("missing: %s", strings.Join(missing, ", "))
 }

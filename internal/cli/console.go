@@ -51,7 +51,7 @@ func runConsole(ctx context.Context) error {
 	})
 	if err != nil {
 		// The line editor could not start; degrade to plain reading.
-		fmt.Fprintf(c.out, "line editing unavailable (%v); continuing in plain mode\n", err)
+		_, _ = fmt.Fprintf(c.out, "line editing unavailable (%v); continuing in plain mode\n", err)
 		return c.runPlain()
 	}
 	c.rl = rl
@@ -93,7 +93,7 @@ func (c *jabariConsole) runPlain() error {
 		c.history = append(c.history, line)
 		quit, err := c.exec(line)
 		if err != nil {
-			fmt.Fprintln(c.out, err)
+			_, _ = fmt.Fprintln(c.out, err)
 		}
 		if quit {
 			return nil
@@ -309,7 +309,7 @@ func (c *jabariConsole) printHistory() {
 		return
 	}
 	for i, h := range c.history {
-		fmt.Fprintf(c.out, "%4d  %s\n", i+1, h)
+		_, _ = fmt.Fprintf(c.out, "%4d  %s\n", i+1, h)
 	}
 }
 
@@ -473,9 +473,9 @@ func (c *jabariConsole) confirmAuth(t *models.Target) error {
 	// swapped for the confirmation text so the typed answer lands on the
 	// [y/N] line instead of a bare "jabari >" prompt.
 	c.pauseSpinner()
-	fmt.Fprintf(c.out, "\n%s\n", c.ui.BoldWhite("Authorized Android security assessment"))
-	fmt.Fprintf(c.out, "  %s %s (%s)\n", c.ui.BoldWhite("Target:"), c.ui.White(t.DisplayName()), t.Type)
-	fmt.Fprintf(c.out, "  %s %s\n", c.ui.BoldWhite("Scope:"), c.ui.DimWhite("authorized assessment only, scoped to this target"))
+	_, _ = fmt.Fprintf(c.out, "\n%s\n", c.ui.BoldWhite("Authorized Android security assessment"))
+	_, _ = fmt.Fprintf(c.out, "  %s %s (%s)\n", c.ui.BoldWhite("Target:"), c.ui.White(t.DisplayName()), t.Type)
+	_, _ = fmt.Fprintf(c.out, "  %s %s\n", c.ui.BoldWhite("Scope:"), c.ui.DimWhite("authorized assessment only, scoped to this target"))
 	c.rl.SetPrompt("  Confirm authorization? [y/N] ")
 	answer, err := c.rl.Readline()
 	c.rl.SetPrompt(c.ui.Prompt("jabari"))
@@ -605,14 +605,6 @@ func (c *jabariConsole) cmdReport(args []string) error {
 		return errs.NewExitError(1, "loading session: "+err.Error())
 	}
 	return renderSession(c.ctx, session)
-}
-
-// consoleConfigKeys are the values settable from the console.
-var consoleConfigKeys = map[string]string{
-	"profile":       "assessment profile (quick, standard, deep, application, device, network, compliance, research)",
-	"report.dir":    "report output directory",
-	"report.format": "report format (terminal, json, markdown, html)",
-	"timeout":       "default timeout for device operations (e.g. 30s)",
 }
 
 // cmdSet implements "set <key> <value>".

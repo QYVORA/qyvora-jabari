@@ -96,35 +96,35 @@ func (u *consoleUI) Section(title string) {
 	}
 	left := inner / 2
 	right := inner - left
-	fmt.Fprintf(u.w, "\n%s\n", u.DimWhite(strings.Repeat("─", left)+" "+label+" "+strings.Repeat("─", right)))
+	_, _ = fmt.Fprintf(u.w, "\n%s\n", u.DimWhite(strings.Repeat("─", left)+" "+label+" "+strings.Repeat("─", right)))
 }
 
 // Rule prints a full-width dim rule.
 func (u *consoleUI) Rule() {
-	fmt.Fprintln(u.w, u.DimWhite(strings.Repeat("─", consoleSectionWidth)))
+	_, _ = fmt.Fprintln(u.w, u.DimWhite(strings.Repeat("─", consoleSectionWidth)))
 }
 
 // Clear clears the terminal screen (a no-op when not a terminal).
 func (u *consoleUI) Clear() {
 	if writerIsTerminal(u.w) {
-		fmt.Fprint(u.w, "\x1b[2J\x1b[H")
+		_, _ = fmt.Fprint(u.w, "\x1b[2J\x1b[H")
 	}
 }
 
 // KV prints a "  key: value" pair with the key emphasized.
 func (u *consoleUI) KV(key, value string) {
-	fmt.Fprintf(u.w, "  %s %s\n", u.BoldWhite(key+":"), u.White(value))
+	_, _ = fmt.Fprintf(u.w, "  %s %s\n", u.BoldWhite(key+":"), u.White(value))
 }
 
 // Status prints a status line with a colored glyph (bettercap style):
 // [+] success, [*] info, [!] warning, [x] error, [>] system, [-] neutral.
 func (u *consoleUI) Status(glyph, format string, args ...any) {
-	fmt.Fprintf(u.w, "  %s %s\n", u.Glyph(glyph), u.White(fmt.Sprintf(format, args...)))
+	_, _ = fmt.Fprintf(u.w, "  %s %s\n", u.Glyph(glyph), u.White(fmt.Sprintf(format, args...)))
 }
 
 // Err prints a hard-error line with a red [x] glyph.
 func (u *consoleUI) Err(format string, args ...any) {
-	fmt.Fprintf(u.w, "  %s %s\n", u.paint("[x]", ansiBold+ansiRed), u.Red(fmt.Sprintf(format, args...)))
+	_, _ = fmt.Fprintf(u.w, "  %s %s\n", u.paint("[x]", ansiBold+ansiRed), u.Red(fmt.Sprintf(format, args...)))
 }
 
 // Glyph returns a colored "[x]" token for a status glyph character.
@@ -166,7 +166,7 @@ func (u *consoleUI) HUD(left, right string) {
 	if pad < 1 {
 		pad = 1
 	}
-	fmt.Fprintf(u.w, "%s %s%s\n", u.paint("▮", ansiBold+ansiLime), left, strings.Repeat(" ", pad)+right)
+	_, _ = fmt.Fprintf(u.w, "%s %s%s\n", u.paint("▮", ansiBold+ansiLime), left, strings.Repeat(" ", pad)+right)
 }
 
 // Table prints a header and aligned rows, padded to the widest visible cell.
@@ -193,7 +193,7 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 		}
 		b.WriteString(padTo(u.BoldWhite(h), widths[i]))
 	}
-	fmt.Fprintln(u.w, b.String())
+	_, _ = fmt.Fprintln(u.w, b.String())
 
 	for _, r := range rows {
 		var rb strings.Builder
@@ -207,7 +207,7 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 			}
 			rb.WriteString(padTo(u.White(cell), widths[i]))
 		}
-		fmt.Fprintln(u.w, rb.String())
+		_, _ = fmt.Fprintln(u.w, rb.String())
 	}
 }
 
@@ -220,11 +220,11 @@ func (u *consoleUI) Banner(tagline string) {
 		for _, r := range line {
 			b.WriteString(u.paint(string(r), bannerGlyphColor(r)))
 		}
-		fmt.Fprintln(u.w, b.String())
+		_, _ = fmt.Fprintln(u.w, b.String())
 	}
-	fmt.Fprintln(u.w)
-	fmt.Fprintln(u.w, u.BoldWhite(tagline))
-	fmt.Fprintln(u.w)
+	_, _ = fmt.Fprintln(u.w)
+	_, _ = fmt.Fprintln(u.w, u.BoldWhite(tagline))
+	_, _ = fmt.Fprintln(u.w)
 }
 
 // bannerGlyphColor maps a glyph of the canonical brand art to the logo
@@ -246,8 +246,8 @@ func bannerGlyphColor(r rune) string {
 // BannerFoot prints the version footer and a help hint under the banner.
 func (u *consoleUI) BannerFoot(version string) {
 	u.Status(">", "v %s", version)
-	fmt.Fprintln(u.w, u.DimWhite("type 'help' for commands, 'quit' to exit"))
-	fmt.Fprintln(u.w)
+	_, _ = fmt.Fprintln(u.w, u.DimWhite("type 'help' for commands, 'quit' to exit"))
+	_, _ = fmt.Fprintln(u.w)
 }
 
 // spinner renders a live progress indicator on the current line while a
@@ -295,7 +295,7 @@ func (s *spinner) run() {
 		s.mu.Lock()
 		if s.active {
 			frame := spinnerFrames[i%len(spinnerFrames)]
-			fmt.Fprintf(s.w, "\r\x1b[K%s %s %s", s.paint("[*]"), s.label, frame)
+			_, _ = fmt.Fprintf(s.w, "\r\x1b[K%s %s %s", s.paint("[*]"), s.label, frame)
 		}
 		s.mu.Unlock()
 		i++
@@ -309,7 +309,7 @@ func (s *spinner) Stop() {
 	close(s.done)
 	s.mu.Lock()
 	if s.active {
-		fmt.Fprintf(s.w, "\r\x1b[K")
+		_, _ = fmt.Fprintf(s.w, "\r\x1b[K")
 		s.active = false
 	}
 	s.mu.Unlock()
@@ -321,7 +321,7 @@ func (s *spinner) Stop() {
 func (s *spinner) Pause() {
 	s.mu.Lock()
 	if s.active {
-		fmt.Fprintf(s.w, "\r\x1b[K")
+		_, _ = fmt.Fprintf(s.w, "\r\x1b[K")
 		s.active = false
 	}
 	s.mu.Unlock()

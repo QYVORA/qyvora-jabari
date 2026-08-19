@@ -126,7 +126,7 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 		return nil, err
 	}
 	if closeStream != nil {
-		defer closeStream()
+		defer func() { _ = closeStream() }()
 	}
 	env.Events = emitter
 	if emitter != nil {
@@ -173,11 +173,6 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 		})
 	}
 	return env.Session, nil
-}
-
-// elapsed helper for progress logging.
-func elapsed(start time.Time) time.Duration {
-	return time.Since(start).Round(time.Millisecond)
 }
 
 // nowUTC returns the current time in UTC, the canonical session timestamp.
