@@ -9,7 +9,6 @@ import (
 
 // countingRule is a test rule that records how many times it was evaluated.
 type countingRule struct {
-	id    string
 	calls int
 }
 
