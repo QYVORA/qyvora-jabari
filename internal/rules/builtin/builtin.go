@@ -97,6 +97,7 @@ var debuggableProductionRule = &deviceRule{
 			Source:  "ro.debuggable",
 			Content: "1",
 		})
+		f.Impact = "Debugging enables memory inspection and bypass of app sandbox."
 		f.Recommendation = "Disable debugging on production builds and enforce verify apps."
 		return []models.Finding{f}, nil
 	},
@@ -130,6 +131,7 @@ var outdatedPatchRule = &deviceRule{
 			Source:  "ro.build.version.security_patch",
 			Content: d.SecurityPatch,
 		})
+		f.Impact = "Known platform CVEs may be unpatched and exploitable."
 		f.Recommendation = "Update the device to the latest available security patch level."
 		return []models.Finding{f}, nil
 	},
@@ -162,6 +164,7 @@ var adbUnauthRule = &deviceRule{
 			Source:  "ro.adb.secure",
 			Content: "0",
 		})
+		f.Impact = "Unauthenticated ADB allows arbitrary command execution on the device."
 		f.Recommendation = "Set ro.adb.secure=1 and disable ADB on production devices."
 		return []models.Finding{f}, nil
 	},
@@ -182,7 +185,13 @@ var rootedDeviceRule = &deviceRule{
 		}
 		f := finding("AND-004", "Rooted Device",
 			"Evidence of a su binary was found on the device.",
-			models.SeverityHigh, models.ConfidenceHigh)
+			models.SeverityHigh, models.ConfidenceMedium)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "root_access",
+			Content: "su binary present",
+		})
+		f.Impact = "Root access breaks the Android security sandbox entirely."
 		f.Recommendation = "Assess whether root is required; consider attestation-based hardening."
 		return []models.Finding{f}, nil
 	},
@@ -237,7 +246,13 @@ var backupEnabledRule = &appRule{
 		}
 		f := finding("AND-005", "Application Backup Enabled",
 			"The application declares allowBackup=true.",
-			models.SeverityMedium, models.ConfidenceHigh)
+			models.SeverityMedium, models.ConfidenceMedium)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "android:allowBackup",
+			Content: "true",
+		})
+		f.Impact = "Backup extraction may reveal app data, credentials, or tokens."
 		f.Recommendation = "Set android:allowBackup=false for apps storing sensitive data."
 		return []models.Finding{f}, nil
 	},
@@ -258,7 +273,13 @@ var cleartextTrafficRule = &appRule{
 		}
 		f := finding("AND-006", "Cleartext Traffic Allowed",
 			"The application uses or permits cleartext traffic.",
-			models.SeverityMedium, models.ConfidenceHigh)
+			models.SeverityMedium, models.ConfidenceMedium)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "usesCleartextTraffic",
+			Content: "true",
+		})
+		f.Impact = "Data in transit can be intercepted on shared networks."
 		f.Recommendation = "Enforce HTTPS and set usesCleartextTraffic=false."
 		return []models.Finding{f}, nil
 	},
@@ -280,6 +301,12 @@ var debuggableAppRule = &appRule{
 		f := finding("AND-007", "Debuggable Application",
 			"The application is built with android:debuggable=true, exposing debugging interfaces.",
 			models.SeverityHigh, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "android:debuggable",
+			Content: "true",
+		})
+		f.Impact = "Debug builds expose debugging interfaces and memory to other apps."
 		f.Recommendation = "Remove android:debuggable=true from release builds."
 		return []models.Finding{f}, nil
 	},
@@ -338,6 +365,7 @@ var outdatedAndroidRule = &deviceRule{
 			Source:  "android_version",
 			Content: d.AndroidVersion,
 		})
+		f.Impact = "End-of-life platforms receive no security patches."
 		f.Recommendation = "Update the device to a supported Android version receiving security updates."
 		return []models.Finding{f}, nil
 	},
@@ -369,6 +397,7 @@ var testKeysRule = &deviceRule{
 			Source:  "ro.build.tags",
 			Content: tags,
 		})
+		f.Impact = "Test-signed builds can be modified without detection."
 		f.Recommendation = "Reject test-key signed builds in production and enforce production signing."
 		return []models.Finding{f}, nil
 	},
@@ -396,12 +425,13 @@ var excessivePermsRule = &appRule{
 		}
 		f := finding("AND-010", "Excessive Dangerous Permissions",
 			fmt.Sprintf("Requests %d dangerous permissions: %s", len(dangerous), strings.Join(dangerous, ", ")),
-			models.SeverityMedium, models.ConfidenceHigh)
+			models.SeverityMedium, models.ConfidenceMedium)
 		f.Evidence = append(f.Evidence, models.Evidence{
 			Kind:    models.KindConfiguration,
 			Source:  "permissions",
 			Content: strings.Join(dangerous, ", "),
 		})
+		f.Impact = "Wide permission surface increases damage from app compromise."
 		f.Recommendation = "Request only the permissions strictly required by the app's functionality."
 		return []models.Finding{f}, nil
 	},
