@@ -198,3 +198,217 @@ func TestRulesTolerateNoData(t *testing.T) {
 		t.Errorf("expected no findings with empty context, got %d", len(findings))
 	}
 }
+
+func TestAllRulesProduceEvidence(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{
+			DebugState:       "1",
+			SecurityPatch:    "2023-01-01",
+			RoAdbSecure:      "0",
+			Rooted:           true,
+			APILevel:         "28",
+			AndroidVersion:   "9",
+			BuildFingerprint: "test/test-keys",
+			SystemProperties: map[string]string{"ro.build.tags": "test-keys"},
+		},
+		Apps: []models.Application{{
+			PackageName:   "com.test.app",
+			AllowBackup:   true,
+			UsesCleartext: true,
+			Debuggable:    true,
+			Permissions:   []string{"android.permission.CAMERA", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CONTACTS", "android.permission.RECORD_AUDIO"},
+		}},
+	}
+
+	for _, rule := range []rules.Rule{
+		debuggableProductionRule,
+		outdatedPatchRule,
+		adbUnauthRule,
+		rootedDeviceRule,
+		backupEnabledRule,
+		cleartextTrafficRule,
+		debuggableAppRule,
+		outdatedAndroidRule,
+		testKeysRule,
+		excessivePermsRule,
+	} {
+		findings, err := rule.Evaluate(ctx, ec)
+		if err != nil {
+			t.Fatalf("rule %s returned error: %v", rule.ID(), err)
+		}
+		for _, f := range findings {
+			if len(f.Evidence) == 0 {
+				t.Errorf("rule %s produced finding %q with no evidence", rule.ID(), f.Title)
+			}
+			if f.Impact == "" {
+				t.Errorf("rule %s produced finding %q with no impact description", rule.ID(), f.Title)
+			}
+		}
+	}
+}
+
+func TestManifestPropertyConfidenceIsMedium(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{Rooted: true},
+		Apps: []models.Application{{
+			PackageName:   "com.test.app",
+			AllowBackup:   true,
+			UsesCleartext: true,
+			Debuggable:    false,
+			Permissions:   []string{"android.permission.CAMERA", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CONTACTS", "android.permission.RECORD_AUDIO"},
+		}},
+	}
+
+	// AND-004 (rooted) should be medium confidence
+	findings, _ := rootedDeviceRule.Evaluate(ctx, ec)
+	if len(findings) == 0 {
+		t.Fatal("AND-004 should fire for rooted device")
+	}
+	if findings[0].Confidence != models.ConfidenceMedium {
+		t.Errorf("AND-004 confidence = %s, want Medium", findings[0].Confidence)
+	}
+
+	// AND-005 (allowBackup) should be medium confidence
+	findings, _ = backupEnabledRule.Evaluate(ctx, ec)
+	if len(findings) == 0 {
+		t.Fatal("AND-005 should fire for allowBackup=true")
+	}
+	if findings[0].Confidence != models.ConfidenceMedium {
+		t.Errorf("AND-005 confidence = %s, want Medium", findings[0].Confidence)
+	}
+
+	// AND-006 (cleartext) should be medium confidence
+	findings, _ = cleartextTrafficRule.Evaluate(ctx, ec)
+	if len(findings) == 0 {
+		t.Fatal("AND-006 should fire for cleartext=true")
+	}
+	if findings[0].Confidence != models.ConfidenceMedium {
+		t.Errorf("AND-006 confidence = %s, want Medium", findings[0].Confidence)
+	}
+
+	// AND-010 (excessive perms) should be medium confidence
+	findings, _ = excessivePermsRule.Evaluate(ctx, ec)
+	if len(findings) == 0 {
+		t.Fatal("AND-010 should fire for 4+ dangerous perms")
+	}
+	if findings[0].Confidence != models.ConfidenceMedium {
+		t.Errorf("AND-010 confidence = %s, want Medium", findings[0].Confidence)
+	}
+}
+
+func TestAND001DoesNotFireOnProductionDevice(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{DebugState: "0"},
+	}
+	findings, err := debuggableProductionRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-001 should not fire on production device, got %d findings", len(findings))
+	}
+}
+
+func TestAND003DoesNotFireWhenSecured(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{RoAdbSecure: "1"},
+	}
+	findings, err := adbUnauthRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-003 should not fire when ADB is secured, got %d findings", len(findings))
+	}
+}
+
+func TestAND003DoesNotFireOnMissingData(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{RoAdbSecure: ""},
+	}
+	findings, err := adbUnauthRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-003 should not fire on missing data, got %d findings", len(findings))
+	}
+}
+
+func TestAND005DoesNotFireWhenBackupDisabled(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.test", AllowBackup: false}},
+	}
+	findings, err := backupEnabledRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-005 should not fire when backup disabled, got %d findings", len(findings))
+	}
+}
+
+func TestAND006DoesNotFireWithoutCleartext(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.test", UsesCleartext: false}},
+	}
+	findings, err := cleartextTrafficRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-006 should not fire without cleartext, got %d findings", len(findings))
+	}
+}
+
+func TestAND007DoesNotFireOnNonDebuggableApp(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Apps: []models.Application{{PackageName: "com.test", Debuggable: false}},
+	}
+	findings, err := debuggableAppRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-007 should not fire on non-debuggable app, got %d findings", len(findings))
+	}
+}
+
+func TestAND008DoesNotFireOnCurrentDevice(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Device: &models.DeviceInfo{APILevel: "34", AndroidVersion: "14"},
+	}
+	findings, err := outdatedAndroidRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-008 should not fire on current device, got %d findings", len(findings))
+	}
+}
+
+func TestAND010DoesNotFireWithFewPermissions(t *testing.T) {
+	ctx := context.Background()
+	ec := rules.EvaluationContext{
+		Apps: []models.Application{{
+			PackageName: "com.test",
+			Permissions: []string{"android.permission.CAMERA"},
+		}},
+	}
+	findings, err := excessivePermsRule.Evaluate(ctx, ec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("AND-010 should not fire with <4 dangerous perms, got %d findings", len(findings))
+	}
+}
