@@ -55,7 +55,7 @@ func (c *TCPConnection) Connect(ctx context.Context) error {
 	}
 
 	if err := c.writeMessage(cnxn); err != nil {
-		c.conn.Close()
+		_ = c.conn.Close()
 		c.conn = nil
 		return fmt.Errorf("send CNXN: %w", err)
 	}
@@ -63,7 +63,7 @@ func (c *TCPConnection) Connect(ctx context.Context) error {
 	// Read response (AUTH or CNXN)
 	resp, err := c.readMessage(5 * time.Second)
 	if err != nil {
-		c.conn.Close()
+		_ = c.conn.Close()
 		c.conn = nil
 		return fmt.Errorf("read response: %w", err)
 	}
@@ -76,11 +76,11 @@ func (c *TCPConnection) Connect(ctx context.Context) error {
 		// Device requires authentication
 		// For now, we'll return an error indicating auth is needed
 		// Full implementation would handle RSA key signing
-		c.conn.Close()
+		_ = c.conn.Close()
 		c.conn = nil
 		return fmt.Errorf("device requires authentication (not yet implemented)")
 	default:
-		c.conn.Close()
+		_ = c.conn.Close()
 		c.conn = nil
 		return fmt.Errorf("unexpected response: %s", resp.String())
 	}
@@ -229,7 +229,7 @@ func (c *TCPConnection) Shell(ctx context.Context, command string) ([]byte, erro
 	if err := c.OpenStream(ctx, service); err != nil {
 		return nil, err
 	}
-	defer c.CloseStream()
+	defer func() { _ = c.CloseStream() }()
 
 	var result []byte
 	for {

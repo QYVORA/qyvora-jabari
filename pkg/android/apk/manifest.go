@@ -15,7 +15,7 @@ func (a *APK) parseManifest(f *zip.File) error {
 	if err != nil {
 		return err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(rc)
 	if err != nil {
@@ -85,25 +85,6 @@ func (a *APK) parseManifest(f *zip.File) error {
 	}
 
 	return nil
-}
-
-// parseManifestDeep performs deeper manifest analysis
-// This would be extended to handle exported detection, intent filters, etc.
-func (a *APK) parseManifestDeep(data []byte) error {
-	// Placeholder for full manifest parsing
-	// Would extract:
-	// - Exported component detection
-	// - Intent filters
-	// - Permission protection levels
-	// - Network security config
-	// - Deep links
-	return nil
-}
-
-func sha256Hash(data []byte) []byte {
-	h := sha256.New()
-	h.Write(data)
-	return h.Sum(nil)
 }
 
 // inferExported attempts to determine if a component is exported

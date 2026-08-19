@@ -371,7 +371,7 @@ func TestOpenAPK_MissingManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test APK: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 
@@ -380,7 +380,7 @@ func TestOpenAPK_MissingManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create ZIP entry: %v", err)
 	}
-	w.Write([]byte("fake dex"))
+	_, _ = w.Write([]byte("fake dex"))
 
 	if err := zw.Close(); err != nil {
 		t.Fatalf("Failed to close ZIP: %v", err)
@@ -405,28 +405,28 @@ func TestParseDEXFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test APK: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 
 	// Add classes.dex
 	w, _ := zw.Create("classes.dex")
 	dexContent := []byte("fake dex content 1")
-	w.Write(dexContent)
+	_, _ = w.Write(dexContent)
 
 	// Add classes2.dex
 	w, _ = zw.Create("classes2.dex")
 	dex2Content := []byte("fake dex content 2")
-	w.Write(dex2Content)
+	_, _ = w.Write(dex2Content)
 
 	// Add classes3.dex
 	w, _ = zw.Create("classes3.dex")
 	dex3Content := []byte("fake dex content 3")
-	w.Write(dex3Content)
+	_, _ = w.Write(dex3Content)
 
 	// Add minimal manifest
 	w, _ = zw.Create("AndroidManifest.xml")
-	w.Write(createMinimalManifest(t))
+	_, _ = w.Write(createMinimalManifest(t))
 
 	if err := zw.Close(); err != nil {
 		t.Fatalf("Failed to close ZIP: %v", err)
@@ -473,7 +473,7 @@ func TestParseNativeLibs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test APK: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 
@@ -487,12 +487,12 @@ func TestParseNativeLibs(t *testing.T) {
 
 	for _, lib := range libs {
 		w, _ := zw.Create(lib)
-		w.Write([]byte("fake native library"))
+		_, _ = w.Write([]byte("fake native library"))
 	}
 
 	// Add minimal manifest
 	w, _ := zw.Create("AndroidManifest.xml")
-	w.Write(createMinimalManifest(t))
+	_, _ = w.Write(createMinimalManifest(t))
 
 	if err := zw.Close(); err != nil {
 		t.Fatalf("Failed to close ZIP: %v", err)
@@ -539,17 +539,17 @@ func TestParseResourcesArsc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test APK: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 
 	// Add resources.arsc
 	w, _ := zw.Create("resources.arsc")
-	w.Write([]byte("fake resources"))
+	_, _ = w.Write([]byte("fake resources"))
 
 	// Add minimal manifest
 	w, _ = zw.Create("AndroidManifest.xml")
-	w.Write(createMinimalManifest(t))
+	_, _ = w.Write(createMinimalManifest(t))
 
 	if err := zw.Close(); err != nil {
 		t.Fatalf("Failed to close ZIP: %v", err)
@@ -574,13 +574,13 @@ func TestParseAPKHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test APK: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	zw := zip.NewWriter(f)
 
 	// Add minimal manifest
 	w, _ := zw.Create("AndroidManifest.xml")
-	w.Write(createMinimalManifest(t))
+	_, _ = w.Write(createMinimalManifest(t))
 
 	if err := zw.Close(); err != nil {
 		t.Fatalf("Failed to close ZIP: %v", err)
@@ -602,7 +602,7 @@ func TestParseAPKHash(t *testing.T) {
 
 	// Verify it's valid hex
 	for _, c := range apk.APKHash {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Errorf("APKHash contains non-hex character: %c", c)
 		}
 	}
@@ -619,27 +619,27 @@ func createMinimalManifest(t *testing.T) []byte {
 	buf := new(bytes.Buffer)
 
 	// AXML header
-	binary.Write(buf, binary.LittleEndian, uint16(0x0003)) // Type: XML
-	binary.Write(buf, binary.LittleEndian, uint16(0x0008)) // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(0))      // File size (placeholder)
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0003)) // Type: XML
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0008)) // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))      // File size (placeholder)
 
 	// String pool chunk
-	binary.Write(buf, binary.LittleEndian, uint16(0x0001)) // Type: String Pool
-	binary.Write(buf, binary.LittleEndian, uint16(0x001C)) // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(100))    // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(1))      // String count
-	binary.Write(buf, binary.LittleEndian, uint32(0))      // Style count
-	binary.Write(buf, binary.LittleEndian, uint32(0))      // Flags
-	binary.Write(buf, binary.LittleEndian, uint32(28))     // Strings start
-	binary.Write(buf, binary.LittleEndian, uint32(0))      // Styles start
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0001)) // Type: String Pool
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x001C)) // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(100))    // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(1))      // String count
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))      // Style count
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))      // Flags
+	_ = binary.Write(buf, binary.LittleEndian, uint32(28))     // Strings start
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))      // Styles start
 
 	// String offset
-	binary.Write(buf, binary.LittleEndian, uint32(0))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))
 
 	// String data: "manifest"
-	binary.Write(buf, binary.LittleEndian, uint16(8))           // Length
+	_ = binary.Write(buf, binary.LittleEndian, uint16(8))       // Length
 	buf.WriteString("m\x00a\x00n\x00i\x00f\x00e\x00s\x00t\x00") // UTF-16LE
-	binary.Write(buf, binary.LittleEndian, uint16(0))           // Null terminator
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0))       // Null terminator
 
 	// Pad to make chunk size match
 	for buf.Len() < 100 {
@@ -647,53 +647,53 @@ func createMinimalManifest(t *testing.T) []byte {
 	}
 
 	// Resource ID chunk
-	binary.Write(buf, binary.LittleEndian, uint16(0x0180)) // Type: Resource IDs
-	binary.Write(buf, binary.LittleEndian, uint16(0x0008)) // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(16))     // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(0x01010000))
-	binary.Write(buf, binary.LittleEndian, uint32(0x01010000))
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0180)) // Type: Resource IDs
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0008)) // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(16))     // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0x01010000))
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0x01010000))
 
 	// Start namespace chunk
-	binary.Write(buf, binary.LittleEndian, uint16(0x0100))     // Type: Start Namespace
-	binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Prefix
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // URI
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0100))     // Type: Start Namespace
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Prefix
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // URI
 
 	// Start tag chunk for manifest
-	binary.Write(buf, binary.LittleEndian, uint16(0x0102))     // Type: Start Tag
-	binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(36))         // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Namespace
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Name (string index 0 = "manifest")
-	binary.Write(buf, binary.LittleEndian, uint16(0x0014))     // Attribute start
-	binary.Write(buf, binary.LittleEndian, uint16(0x0014))     // Attribute size
-	binary.Write(buf, binary.LittleEndian, uint16(0))          // Attribute count
-	binary.Write(buf, binary.LittleEndian, uint16(0))          // ID index
-	binary.Write(buf, binary.LittleEndian, uint16(0))          // Class index
-	binary.Write(buf, binary.LittleEndian, uint16(0))          // Style index
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0102))     // Type: Start Tag
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(36))         // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Namespace
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Name (string index 0 = "manifest")
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0014))     // Attribute start
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0014))     // Attribute size
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0))          // Attribute count
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0))          // ID index
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0))          // Class index
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0))          // Style index
 
 	// End tag chunk
-	binary.Write(buf, binary.LittleEndian, uint16(0x0103))     // Type: End Tag
-	binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Namespace
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Name
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0103))     // Type: End Tag
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Namespace
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Name
 
 	// End namespace chunk
-	binary.Write(buf, binary.LittleEndian, uint16(0x0101))     // Type: End Namespace
-	binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
-	binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
-	binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Prefix
-	binary.Write(buf, binary.LittleEndian, uint32(0))          // URI
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0101))     // Type: End Namespace
+	_ = binary.Write(buf, binary.LittleEndian, uint16(0x0010))     // Header size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(24))         // Chunk size
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // Line number
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Comment
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0xFFFFFFFF)) // Prefix
+	_ = binary.Write(buf, binary.LittleEndian, uint32(0))          // URI
 
 	return buf.Bytes()
 }

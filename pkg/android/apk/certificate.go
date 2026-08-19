@@ -13,7 +13,7 @@ func parseCertificate(f *zip.File) (Certificate, error) {
 	if err != nil {
 		return Certificate{}, err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(rc)
 	if err != nil {
@@ -39,11 +39,12 @@ func parseCertificate(f *zip.File) (Certificate, error) {
 		cert.NotAfter = c.NotAfter.Format("2006-01-02")
 		cert.SHA256 = fmt.Sprintf("%x", c.Raw)
 
-		if c.PublicKeyAlgorithm == x509.RSA {
+		switch c.PublicKeyAlgorithm {
+		case x509.RSA:
 			cert.Algorithm = "RSA"
-		} else if c.PublicKeyAlgorithm == x509.ECDSA {
+		case x509.ECDSA:
 			cert.Algorithm = "ECDSA"
-		} else if c.PublicKeyAlgorithm == x509.DSA {
+		case x509.DSA:
 			cert.Algorithm = "DSA"
 		}
 	}

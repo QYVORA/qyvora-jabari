@@ -128,7 +128,7 @@ func Open(path string) (*APK, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open APK: %w", err)
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	// Parse APK contents
 	if err := apk.parse(&r.Reader); err != nil {
@@ -211,7 +211,7 @@ func hashZipFile(f *zip.File) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, rc); err != nil {
@@ -227,7 +227,7 @@ func hashFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	h := sha256.New()
 	for _, f := range r.File {
@@ -235,8 +235,8 @@ func hashFile(path string) (string, error) {
 		if err != nil {
 			continue
 		}
-		io.Copy(h, rc)
-		rc.Close()
+		_, _ = io.Copy(h, rc)
+		_ = rc.Close()
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
