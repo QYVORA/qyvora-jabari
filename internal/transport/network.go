@@ -46,8 +46,11 @@ func (t *NetworkTransport) adbEndpoint() string {
 // "authorization problem".
 func (t *NetworkTransport) Connect(ctx context.Context) error {
 	// Attempt a raw TCP dial first so an unreachable host is reported
-	// clearly instead of a confusing adb error.
-	conn, err := net.DialTimeout("tcp", t.adbEndpoint(), 5*time.Second)
+	// clearly instead of a confusing adb error. The probe honors the
+	// caller's cancellation via DialContext.
+	probeCtx, probeCancel := context.WithTimeout(ctx, 5*time.Second)
+	conn, err := new(net.Dialer).DialContext(probeCtx, "tcp", t.adbEndpoint())
+	probeCancel()
 	if err != nil {
 		return fmt.Errorf("target %s unreachable: %w", t.addr, err)
 	}

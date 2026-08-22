@@ -38,9 +38,11 @@ func NewNativeNetworkTransport(addr string, adbPort int) (*NativeNetworkTranspor
 
 // Connect establishes the native ADB connection
 func (t *NativeNetworkTransport) Connect(ctx context.Context) error {
-	// Test TCP connectivity first
+	// Test TCP connectivity first, honoring caller cancellation.
 	endpoint := net.JoinHostPort(t.addr, strconv.Itoa(t.adbPort))
-	conn, err := net.DialTimeout("tcp", endpoint, 5*time.Second)
+	probeCtx, probeCancel := context.WithTimeout(ctx, 5*time.Second)
+	conn, err := new(net.Dialer).DialContext(probeCtx, "tcp", endpoint)
+	probeCancel()
 	if err != nil {
 		return fmt.Errorf("target %s unreachable: %w", t.addr, err)
 	}
