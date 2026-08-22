@@ -24,7 +24,7 @@ func newStageCmd(use, short string, run stageRunner) *cobra.Command {
 		Use:   use,
 		Short: short,
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return run(cmd.Context())
 		},
 	}

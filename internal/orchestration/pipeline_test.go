@@ -21,7 +21,7 @@ type fakeStage struct {
 
 func (f *fakeStage) Name() string { return f.name }
 
-func (f *fakeStage) Run(ctx context.Context, env *core.Env) error { return f.err }
+func (f *fakeStage) Run(_ context.Context, _ *core.Env) error { return f.err }
 
 func TestPipelineEmitsStageEvents(t *testing.T) {
 	var buf bytes.Buffer

@@ -61,7 +61,7 @@ func TestEmitterWritesJSONL(t *testing.T) {
 	}
 }
 
-func TestEmitterNilSafe(t *testing.T) {
+func TestEmitterNilSafe(_ *testing.T) {
 	var em *Emitter
 	em.Info("jabari", ScanStarted, nil) // must not panic
 }

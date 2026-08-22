@@ -42,7 +42,7 @@ func (s *Store) Dir() string { return s.dir }
 // Save writes an artifact to the store and returns an Evidence record that
 // references it. The artifact filename is derived from the evidence hash so
 // identical payloads are stored once.
-func (s *Store) Save(ctx context.Context, kind, source string, data []byte) (models.Evidence, error) {
+func (s *Store) Save(_ context.Context, kind, source string, data []byte) (models.Evidence, error) {
 	ev := models.Evidence{
 		ID:        models.EvidenceID("ev"),
 		Kind:      kind,

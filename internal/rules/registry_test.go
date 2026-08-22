@@ -18,7 +18,7 @@ func (r *countingRule) Category() string          { return "test" }
 func (r *countingRule) Description() string       { return "test rule for registry" }
 func (r *countingRule) Severity() models.Severity { return models.SeverityMedium }
 func (r *countingRule) MitreRefs() []string       { return nil }
-func (r *countingRule) Evaluate(ctx context.Context, ec EvaluationContext) ([]models.Finding, error) {
+func (r *countingRule) Evaluate(_ context.Context, _ EvaluationContext) ([]models.Finding, error) {
 	r.calls++
 	return []models.Finding{
 		{
@@ -135,7 +135,7 @@ func (r *failingRule) ID() string {
 	return "TEST-BAD"
 }
 
-func (r *failingRule) Evaluate(ctx context.Context, ec EvaluationContext) ([]models.Finding, error) {
+func (r *failingRule) Evaluate(_ context.Context, _ EvaluationContext) ([]models.Finding, error) {
 	return nil, &evaluationFailure{}
 }
 

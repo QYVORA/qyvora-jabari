@@ -24,7 +24,7 @@ var authorizationFlags struct {
 // or a hard failure in non-interactive contexts.
 //
 // It returns a copy of the target with the authorization recorded.
-func authorize(cmd *cobra.Command, t *models.Target) (*models.Target, error) {
+func authorize(_ *cobra.Command, t *models.Target) (*models.Target, error) {
 	switch {
 	case authorizationFlags.authorized || cfg.GetBool("authorized"):
 		t.Auth = granted(t)

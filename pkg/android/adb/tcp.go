@@ -100,7 +100,7 @@ func (c *TCPConnection) Close() error {
 }
 
 // OpenStream opens a stream to a service
-func (c *TCPConnection) OpenStream(ctx context.Context, service string) error {
+func (c *TCPConnection) OpenStream(_ context.Context, service string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

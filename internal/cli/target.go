@@ -139,7 +139,7 @@ func newTargetShowCmd() *cobra.Command {
 		Use:   "show",
 		Short: "Show the current target",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			t := targets.Current()
 			if t == nil {
 				return errors.NewExitError(2, "no target selected")
@@ -166,7 +166,7 @@ func newTargetListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List known targets",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			list := targets.List()
 			if len(list) == 0 {
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No targets.")

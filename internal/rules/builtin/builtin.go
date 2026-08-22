@@ -62,7 +62,7 @@ func (r *deviceRule) Evaluate(ctx context.Context, ec rules.EvaluationContext) (
 	return r.eval(ctx, ec.Device)
 }
 
-func finding(id, title, desc string, sev models.Severity, conf models.Confidence) models.Finding {
+func finding(_, title, desc string, sev models.Severity, conf models.Confidence) models.Finding {
 	return models.Finding{
 		ID:          models.NewID("fnd"),
 		Title:       title,

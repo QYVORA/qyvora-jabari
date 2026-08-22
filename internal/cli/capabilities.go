@@ -16,7 +16,7 @@ func newCapabilitiesCmd() *cobra.Command {
 Native capabilities are built into Jabari and require no external dependencies.
 Integrations are optional tools that extend Jabari's functionality.`,
 		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			byCategory := capabilities.ByCategory()
 
 			// Define category order

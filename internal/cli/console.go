@@ -662,7 +662,7 @@ func (c *jabariConsole) cmdGet(args []string) error {
 }
 
 // cmdConfig dumps the current configuration.
-func (c *jabariConsole) cmdConfig(args []string) {
+func (c *jabariConsole) cmdConfig(_ []string) {
 	c.ui.Section("configuration")
 	rows := [][]string{
 		{"profile", c.cfgProfile()},

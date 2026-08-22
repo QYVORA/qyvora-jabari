@@ -24,7 +24,7 @@ func (s *Stage) Name() string { return "risk" }
 // they survive into JSON, YAML, reports, and machine-readable events. Scores
 // are informational; they are never a substitute for reading the findings
 // themselves.
-func (s *Stage) Run(ctx context.Context, env *core.Env) error {
+func (s *Stage) Run(_ context.Context, env *core.Env) error {
 	if env.Session == nil {
 		return nil
 	}

@@ -49,7 +49,7 @@ type Writer struct {
 }
 
 // Render writes the session report.
-func (w *Writer) Render(ctx context.Context, s *models.Session) error {
+func (w *Writer) Render(_ context.Context, s *models.Session) error {
 	switch w.Format {
 	case FormatJSON:
 		return renderJSON(w.Out, s)

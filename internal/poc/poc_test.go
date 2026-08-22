@@ -20,14 +20,14 @@ func newFakeTransport() *fakeTransport {
 	return &fakeTransport{canned: map[string]models.Response{}}
 }
 
-func (f *fakeTransport) Connect(ctx context.Context) error { return nil }
+func (f *fakeTransport) Connect(_ context.Context) error { return nil }
 func (f *fakeTransport) Disconnect() error                 { return nil }
 func (f *fakeTransport) String() string                    { return "fake" }
-func (f *fakeTransport) Info(ctx context.Context) (*models.DeviceInfo, error) {
+func (f *fakeTransport) Info(_ context.Context) (*models.DeviceInfo, error) {
 	return &models.DeviceInfo{}, nil
 }
 
-func (f *fakeTransport) Execute(ctx context.Context, req models.Request) (models.Response, error) {
+func (f *fakeTransport) Execute(_ context.Context, req models.Request) (models.Response, error) {
 	key := strings.Join(req.Args, " ")
 	for prefix, resp := range f.canned {
 		if strings.HasPrefix(key, prefix) {

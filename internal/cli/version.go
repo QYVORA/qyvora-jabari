@@ -16,7 +16,7 @@ func newVersionCmd() *cobra.Command {
 		Short: "Print version information",
 		Long:  "Display the version, build commit, build date, and build user.",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			info := version.GetInfo()
 
 			if printer.Format() != output.FormatTerminal {

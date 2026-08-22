@@ -74,7 +74,7 @@ host. Detection is passive PATH lookup; nothing is executed.
 Typical on a Kali host:
   apt install android-tools-adb apktool jadx frida-tools objection drozer`,
 		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			rows := make([][]string, 0, len(toolsSpecs))
 			for _, st := range detectTools() {
 				status := "missing"
