@@ -29,6 +29,9 @@ jobs:
           - goos: windows
             goarch: amd64
             name: jabari-windows-amd64.exe
+          - goos: windows
+            goarch: arm64
+            name: jabari-windows-arm64.exe
     steps:
       - uses: actions/checkout@v4
 
@@ -40,10 +43,15 @@ jobs:
         run: go test ./...
 
       - name: Build binary
+        # Stamp version metadata via the current module path; a stale module
+        # path here would silently no-op and release binaries reporting "dev".
         run: |
           mkdir -p dist
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath \
-            -ldflags "-X github.com/anomalyco/qyvora-jabari/internal/version.Version=${{ github.ref_name }}" \
+            -ldflags "-s -w \
+            -X github.com/QYVORA/qyvora-jabari/internal/version.Version=${{ github.ref_name }} \
+            -X github.com/QYVORA/qyvora-jabari/internal/version.Commit=${{ github.sha }} \
+            -X github.com/QYVORA/qyvora-jabari/internal/version.Date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             -o dist/${{ matrix.name }} ./cmd/jabari
 
       - name: Upload artifact
