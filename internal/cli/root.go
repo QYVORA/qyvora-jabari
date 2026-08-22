@@ -76,7 +76,7 @@ var rootCmd = &cobra.Command{
 	// Validate shared flag/config state before any command runs so an
 	// invalid --output value is rejected as a usage error (exit code 2)
 	// instead of executing the command first.
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		if initErr != nil {
 			return errs.NewExitError(2, initErr.Error())
 		}
@@ -85,21 +85,36 @@ var rootCmd = &cobra.Command{
 	// Running "jabari" with no subcommand drops into the interactive
 	// Metasploit-style console. One-shot commands remain available both at
 	// the shell and as console commands.
-	RunE: func(cmd *cobra.Command, args []string) error {
+	// Unknown subcommand names are usage errors (exit 2), matching the flag
+	// handling above; this validator replaces cobra's legacyArgs default so
+	// the exit code stays under QYVORA contract control.
+	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) > 0 {
-			return fmt.Errorf("unknown command %q (try 'jabari --help')", args[0])
+			return errs.NewExitError(2, fmt.Sprintf("unknown command %q (try 'jabari --help')", args[0]))
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runConsole(cmd.Context())
 	},
 }
 
-// Execute runs the root command and returns the process exit code. It never
-// calls os.Exit itself so callers control process termination. The command
-// context is bound to SIGINT/SIGTERM so assessments cancel cleanly.
+// Execute runs the root command against os.Args and returns the process exit
+// code. It never calls os.Exit itself so callers control process termination.
+// The command context is bound to SIGINT/SIGTERM so assessments cancel
+// cleanly.
 func Execute() int {
+	return ExecuteArgs(os.Args[1:])
+}
+
+// ExecuteArgs runs the root command with an explicit argument vector and
+// returns the process exit code. It exists so tests can exercise exit-code
+// behavior without spawning processes.
+func ExecuteArgs(args []string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	rootCmd.SetContext(ctx)
+	rootCmd.SetArgs(args)
 
 	if err := rootCmd.Execute(); err != nil {
 		var exitErr *errs.ExitError
@@ -122,6 +137,12 @@ func Execute() int {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	// Flag-parse failures (unknown flag, bad value) are usage errors and must
+	// exit 2 per the shared QYVORA exit-code contract, not the runtime code 1.
+	rootCmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return errs.NewExitError(2, err.Error())
+	})
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default $HOME/.config/qyvora/jabari/config.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
