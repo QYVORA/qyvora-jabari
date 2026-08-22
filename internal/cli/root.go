@@ -154,6 +154,7 @@ func init() {
 	rootCmd.PersistentFlags().DurationVarP(&timeout, "timeout", "t", 30*time.Second, "default timeout for device operations")
 
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newUpdatesCmd())
 	rootCmd.AddCommand(newCompletionCmd())
 	rootCmd.AddCommand(newCapabilitiesCmd())
 	rootCmd.AddCommand(newToolsCmd())

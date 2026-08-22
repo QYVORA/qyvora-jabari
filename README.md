@@ -81,6 +81,19 @@ sudo make install          # system-wide (Linux/Unix), or:
 make install-user          # per-user, no root
 ```
 
+## Updating
+
+```sh
+jabari updates             # `jabari update` works as an alias; also available in the console
+```
+
+Checks the installed version against the latest official QYVORA GitHub
+release, downloads the artifact for your platform, verifies its SHA-256
+against the published `SHA256SUMS`, and swaps the binary in atomically.
+Downgrades are refused, permission problems are reported clearly instead of
+escalating on their own, and any failure leaves your current binary untouched —
+no Go toolchain or Git required.
+
 ## Quick start
 
 ```sh

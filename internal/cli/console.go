@@ -16,6 +16,7 @@ import (
 	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
 	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
 	"github.com/QYVORA/qyvora-jabari/internal/reporting"
+	"github.com/QYVORA/qyvora-jabari/internal/selfupdate"
 	"github.com/QYVORA/qyvora-jabari/internal/version"
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
@@ -180,6 +181,8 @@ func (c *jabariConsole) exec(line string) (bool, error) {
 		c.ui.Banner("Android Security Assessment Framework")
 	case "version":
 		c.printVersion()
+	case "updates", "update":
+		return false, c.cmdUpdates()
 	case "clear":
 		c.ui.Clear()
 	case "history":
@@ -243,6 +246,7 @@ func (c *jabariConsole) help() {
 			{"help", "show this command list"},
 			{"banner", "print the jabari banner"},
 			{"version", "print version information"},
+			{"updates", "check for and install official QYVORA updates"},
 			{"history", "show command history"},
 			{"clear", "clear the screen"},
 			{"quit", "leave the console"},
@@ -300,6 +304,24 @@ func (c *jabariConsole) printVersion() {
 	c.ui.KV("commit", info.Commit)
 	c.ui.KV("built", info.Date)
 	c.ui.KV("build user", info.BuildUser)
+}
+
+// cmdUpdates runs the same self-update flow as `jabari updates` from inside
+// the console, writing progress through the console's writer.
+func (c *jabariConsole) cmdUpdates() error {
+	res, err := selfupdate.Run(c.ctx, releaseConfig(), selfupdate.Options{Out: c.out})
+	if err != nil {
+		return wrapUpdateError(err)
+	}
+	switch res.Status {
+	case selfupdate.StatusUpdated:
+		// Run already reported the completed update through Out.
+	case selfupdate.StatusCurrent:
+		c.ui.Status("✓", "jabari is already up to date (%s)", res.Latest)
+	case selfupdate.StatusNewerInstalled:
+		c.ui.Status("✓", "installed %s is newer than %s; no downgrade performed", res.Current, res.Latest)
+	}
+	return nil
 }
 
 // printHistory prints the current session's command history.

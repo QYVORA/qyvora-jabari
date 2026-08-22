@@ -82,6 +82,45 @@ The desktop entry is indexed by the launcher, so searching `jabari` in the
 application menu shows the tool with its logo. Desktop and icon caches are
 refreshed automatically when the cache tools are present.
 
+## Updating
+
+Once installed, update with:
+
+```sh
+jabari updates            # `jabari update` works as an alias
+```
+
+The command is also available inside the interactive console (`updates`).
+
+What it does:
+
+1. Reads the installed version — the same value `jabari version` reports.
+2. Queries the official QYVORA GitHub releases
+   (`github.com/QYVORA/qyvora-jabari/releases`); no other source is ever contacted.
+3. Compares versions semantically (`v1.10.0 > v1.9.0`) and reports whether an
+   update exists.
+4. Downloads the release artifact built for your OS and CPU architecture
+   (`jabari-linux-amd64`, `jabari-darwin-arm64`, `jabari-windows-amd64.exe`, …).
+5. Verifies its SHA-256 against the `SHA256SUMS` manifest published with the
+   release; installation never proceeds on a mismatch.
+6. Swaps the new binary in atomically, preserving the original file permissions.
+7. Cleans up all temporary files and confirms the new version.
+
+Notes:
+
+- No Go toolchain, Git, or source checkout is required — official prebuilt
+  binaries are the update channel.
+- If the binary lives somewhere like `/usr/local/bin` that your user cannot
+  write to, the updater stops with clear guidance instead of escalating on its
+  own. Re-run with the appropriate permissions or use `make install-user`.
+- Downgrades are refused: an installed version newer than the latest release is
+  left alone.
+- Offline or GitHub unreachable? The command fails cleanly; your installed
+  binary stays exactly as it was.
+
+Machine-readable output follows the global flags: pass `--json` (or
+`--output json`) for a JSON status object.
+
 ## Uninstall
 
 Remove installed files (system or user):
