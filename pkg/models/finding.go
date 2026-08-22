@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"sort"
+	"strings"
+	"time"
+)
 
 // FindingStatus tracks where a finding sits in the assessment lifecycle.
 // Validation moves findings from Detected to Confirmed (or marks them as a
@@ -74,6 +80,40 @@ type Finding struct {
 func (f *Finding) AddEvidence(ev Evidence) *Finding {
 	f.Evidence = append(f.Evidence, ev)
 	return f
+}
+
+// Fingerprint returns a stable identity key for the finding: the SHA-256
+// digest of its rule ID, category, title, target and sorted attributes.
+//
+// Two findings with the same fingerprint describe the same underlying issue
+// (for example, one rule flagging the same package twice) and are collapsed
+// by Session.AddFinding. Findings from different rules never share a
+// fingerprint even when they mention the same condition: distinct checks are
+// distinct findings and must not be over-deduplicated. Timestamps, evidence,
+// confidence and status deliberately do not participate — they may legitimately
+// differ between observations of one issue.
+func (f *Finding) Fingerprint() string {
+	var b strings.Builder
+	b.WriteString(f.RuleID)
+	b.WriteString("\x00")
+	b.WriteString(f.Category)
+	b.WriteString("\x00")
+	b.WriteString(f.Title)
+	b.WriteString("\x00")
+	b.WriteString(f.TargetID)
+	keys := make([]string, 0, len(f.Attributes))
+	for k := range f.Attributes {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		b.WriteString("\x00")
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(f.Attributes[k])
+	}
+	sum := sha256.Sum256([]byte(b.String()))
+	return hex.EncodeToString(sum[:])
 }
 
 // SeverityCounts summarizes how many findings exist at each severity. It is

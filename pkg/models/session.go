@@ -43,10 +43,57 @@ func NewSession() *Session {
 	}
 }
 
-// AddFinding records a finding against the session.
+// AddFinding records a finding against the session. Findings whose
+// fingerprint matches one already recorded are not appended twice: their
+// evidence is merged into the existing finding instead, so retries and
+// repeated observations of the same condition cannot inflate the report.
 func (s *Session) AddFinding(f *Finding) {
 	f.SessionID = s.ID
+	fp := f.Fingerprint()
+	for _, existing := range s.Findings {
+		if existing.Fingerprint() == fp {
+			mergeEvidence(existing, f)
+			return
+		}
+	}
 	s.Findings = append(s.Findings, f)
+}
+
+// mergeEvidence appends the incoming finding's evidence to dst, skipping
+// items whose content hash is already present so merged findings do not
+// carry duplicate artifacts. The higher-confidence status of either finding
+// is kept on dst.
+func mergeEvidence(dst, src *Finding) {
+	seen := make(map[string]bool, len(dst.Evidence))
+	for _, ev := range dst.Evidence {
+		seen[ev.Hash] = true
+	}
+	for _, ev := range src.Evidence {
+		if !seen[ev.Hash] {
+			dst.Evidence = append(dst.Evidence, ev)
+			seen[ev.Hash] = true
+		}
+	}
+	if confidenceRank(src.Confidence) > confidenceRank(dst.Confidence) {
+		dst.Confidence = src.Confidence
+	}
+}
+
+// confidenceRank orders Confidence values from weakest to strongest for
+// deduplication decisions only; unknown values rank lowest.
+func confidenceRank(c Confidence) int {
+	switch c {
+	case ConfidenceConfirmed:
+		return 4
+	case ConfidenceHigh:
+		return 3
+	case ConfidenceMedium:
+		return 2
+	case ConfidenceLow:
+		return 1
+	default:
+		return 0
+	}
 }
 
 // AddPoc records a proof-of-concept run against the session.
