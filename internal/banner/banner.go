@@ -1,7 +1,7 @@
 // Package banner provides the canonical JABARI brand banner (ASCII art).
 //
 // The art below is the exact byte-for-byte content of the repository-root
-// file ascci_banner.txt, which is the single source of truth for the brand
+// file ascii_banner.txt, which is the single source of truth for the brand
 // mark. Every surface of the tool (interactive console, terminal reports)
 // MUST render this banner — never substitute custom art or hand-written
 // wordmarks.
