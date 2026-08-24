@@ -11,7 +11,7 @@ is provided in `SECURITY.md`.
 - **New features and API changes:** discussed in an issue first, then
   implemented in a PR.
 - **Security-sensitive changes:** reviewed by a maintainer and referenced
-  against the [Security Model](docs/security-model.md).
+  against the [Security Model](docs/Security-Model.md).
 
 ## Releases
 

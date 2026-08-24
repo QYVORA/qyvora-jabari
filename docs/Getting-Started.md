@@ -100,7 +100,7 @@ jabari assess usb --profile deep
 jabari assess usb --profile application
 ```
 
-See [Configuration](configuration.md) for the full list.
+See [Configuration](Configuration.md) for the full list.
 
 ## Non-interactive / automation
 
@@ -119,4 +119,4 @@ authorized: true
 ```
 
 > `authorized: true` in a config file is a strong statement. Use it only in
-> environments you control; see [Security Model](security-model.md).
+> environments you control; see [Security Model](Security-Model.md).

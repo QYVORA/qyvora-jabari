@@ -1,7 +1,7 @@
 # Development
 
-Guidance for contributors. See also [Architecture](architecture.md),
-[Rules](rules.md), and the code of conduct.
+Guidance for contributors. See also [Architecture](Architecture.md),
+[Rules](Rules.md), and the code of conduct.
 
 ## Setup
 
@@ -33,13 +33,13 @@ adb directly — so tests can substitute a fake.
 
 ## Adding a rule
 
-See [Rules](rules.md). Minimum bar:
+See [Rules](Rules.md). Minimum bar:
 
 - table-driven tests with synthetic fixtures,
 - honest confidence (do not claim high confidence on ambiguous input),
 - evidence recorded for each finding,
 - doc comment on the rule type,
-- entry in `docs/rules.md`.
+- entry in `docs/Rules.md`.
 
 ## Parser conventions
 

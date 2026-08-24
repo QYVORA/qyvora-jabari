@@ -71,5 +71,5 @@ device metadata.
 ## Future: offline APK targets
 
 An `apk` target mode for static analysis is planned (see
-[Roadmap](roadmap.md)). It will have no live transport; analysis will be
+[Roadmap](Roadmap.md)). It will have no live transport; analysis will be
 purely offline against the APK file.

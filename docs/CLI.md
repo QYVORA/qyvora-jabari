@@ -72,7 +72,7 @@ Flags:
 - `--profile <name>` — `quick|standard|deep|application|device|network|compliance|research` (default `standard`)
 - `-y, --yes` — non-interactive authorization
 - `--poc` — append the proof-of-concept stage to the pipeline (see
-  [PoC Modules](poc.md))
+  [PoC Modules](PoC.md))
 - `--poc-high-risk` — allow PoC modules that change device state (e.g.
   `android.exported_activity`)
 - `--json` / `-o <fmt>` — report format
@@ -120,7 +120,7 @@ jabari poc --poc-high-risk          # also allow state-changing modules
 jabari poc --poc-module android.world_readable_data
 ```
 
-See [PoC Modules](poc.md) for the module catalog, safety gates and event
+See [PoC Modules](PoC.md) for the module catalog, safety gates and event
 schema.
 
 ## `report`

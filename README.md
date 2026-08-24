@@ -35,13 +35,13 @@ Discovery → Enumeration → Analysis → Validation → Evidence → Risk → 
 Every assessment requires **explicit target authorization**. All operations
 are scoped, logged, and evidence-producing. JABARI is intended for use only
 on systems you are authorized to test. See [SECURITY.md](SECURITY.md) and
-[Security Model](docs/security-model.md).
+[Security Model](docs/Security-Model.md).
 
 ## Status
 
 **Foundation.** The core pipeline, data model, transports, rule engine,
 evidence system, and reporting are implemented and tested. See
-[Roadmap](docs/roadmap.md) for what is planned (APK analysis, runtime
+[Roadmap](docs/Roadmap.md) for what is planned (APK analysis, runtime
 instrumentation, exploitation validation, ecosystem integration).
 
 ## Features
@@ -74,7 +74,7 @@ go build -o bin/jabari ./cmd/jabari
 ```
 
 Install `jabari` into your system so it appears in your commands and app
-menu with the logo (see [Installation](docs/installation.md)):
+menu with the logo (see [Installation](docs/Installation.md)):
 
 ```sh
 sudo make install          # system-wide (Linux/Unix), or:
@@ -147,20 +147,20 @@ Key findings
 
 | Document | Purpose |
 |---|---|
-| [Architecture](docs/architecture.md) | Package layout and pipeline design |
-| [Installation](docs/installation.md) | Building from source |
-| [Getting started](docs/getting-started.md) | First assessment |
-| [CLI reference](docs/cli.md) | Every command and flag |
-| [Targets](docs/targets.md) | USB and network target modes |
-| [Configuration](docs/configuration.md) | Config file and environment |
-| [Rules](docs/rules.md) | Rule engine and the AND-xxx rule set |
-| [PoC modules](docs/poc.md) | Proof-of-concept module system, safety, and events |
-| [Validation](docs/validation.md) | How findings are confirmed |
-| [Evidence](docs/evidence.md) | Evidence collection and storage |
-| [Reporting](docs/reporting.md) | Report formats |
-| [Security model](docs/security-model.md) | Trust boundaries and safety controls |
-| [Development](docs/development.md) | Contributing code |
-| [Roadmap](docs/roadmap.md) | Planned work |
+| [Architecture](docs/Architecture.md) | Package layout and pipeline design |
+| [Installation](docs/Installation.md) | Building from source |
+| [Getting started](docs/Getting-Started.md) | First assessment |
+| [CLI reference](docs/CLI.md) | Every command and flag |
+| [Targets](docs/Targets.md) | USB and network target modes |
+| [Configuration](docs/Configuration.md) | Config file and environment |
+| [Rules](docs/Rules.md) | Rule engine and the AND-xxx rule set |
+| [PoC modules](docs/PoC.md) | Proof-of-concept module system, safety, and events |
+| [Validation](docs/Validation.md) | How findings are confirmed |
+| [Evidence](docs/Evidence.md) | Evidence collection and storage |
+| [Reporting](docs/Reporting.md) | Report formats |
+| [Security model](docs/Security-Model.md) | Trust boundaries and safety controls |
+| [Development](docs/Development.md) | Contributing code |
+| [Roadmap](docs/Roadmap.md) | Planned work |
 
 ## Project layout
 

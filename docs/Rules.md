@@ -64,9 +64,9 @@ Each rule:
 1. Add a file under `internal/rules/` implementing `Rule`.
 2. Register it in `internal/rules/registry.go`.
 3. Add table-driven tests in `internal/rules/`.
-4. Document it in `docs/rules.md`.
+4. Document it in `docs/Rules.md`.
 
-See [Development](development.md) for conventions and test expectations.
+See [Development](Development.md) for conventions and test expectations.
 
 ## Rules and profiles
 

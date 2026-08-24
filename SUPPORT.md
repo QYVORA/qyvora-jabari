@@ -15,5 +15,5 @@ Start with the `docs/` directory and the README.
 
 JABARI is an **authorized-use** tool. Ensure you have explicit permission
 before assessing any device, and review the
-[Security Model](docs/security-model.md) before deploying it in an
+[Security Model](docs/Security-Model.md) before deploying it in an
 organization.

@@ -14,7 +14,7 @@ deliberately **not** a broad network scanner and **not** an exploitation or
 persistence framework. Contributions that push against those boundaries will
 be declined even if technically impressive.
 
-Design goals: see [Architecture](docs/architecture.md).
+Design goals: see [Architecture](docs/Architecture.md).
 
 ## Development setup
 
@@ -24,7 +24,7 @@ make vet
 make fmt
 ```
 
-See [Development](docs/development.md) for layout and style conventions.
+See [Development](docs/Development.md) for layout and style conventions.
 
 ## How to contribute
 

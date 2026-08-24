@@ -34,4 +34,4 @@ logic, and the CLI.
 
 Out of scope: vulnerabilities in the assessed Android device or apps; these
 are findings, not framework vulnerabilities. See the
-[Security Model](docs/security-model.md).
+[Security Model](docs/Security-Model.md).

@@ -315,10 +315,10 @@ caps                         # Console shorthand
 - ✅ `NATIVE_ENGINE_AUDIT.md` - Architecture audit
 - ✅ `IMPLEMENTATION_SUMMARY.md` - Implementation status
 - ⚠️ `README.md` - Mentions native engine but not detailed
-- ❌ `docs/architecture.md` - Not updated with native engine
-- ❌ `docs/development.md` - Not updated with new packages
-- ⚠️ `docs/installation.md` - Doesn't mention reduced dependencies
-- ❌ `docs/getting-started.md` - Doesn't show capabilities command
+- ❌ `docs/Architecture.md` - Not updated with native engine
+- ❌ `docs/Development.md` - Not updated with new packages
+- ⚠️ `docs/Installation.md` - Doesn't mention reduced dependencies
+- ❌ `docs/Getting-Started.md` - Doesn't show capabilities command
 
 **Quality**: Developer documentation good, user documentation needs work
 
@@ -554,8 +554,8 @@ Binary size: 12.3 MB
 
 3. **Update User Documentation**
    - README.md - highlight native engine
-   - docs/getting-started.md - show capabilities command
-   - docs/installation.md - mention reduced dependencies
+   - docs/Getting-Started.md - show capabilities command
+   - docs/Installation.md - mention reduced dependencies
    - Estimated effort: 1-2 hours
 
 ### 🟡 SHORT-TERM (Next sprint)
@@ -642,8 +642,8 @@ The previous session successfully implemented the **foundational native engine**
 - [ ] Write comprehensive APK parser tests (CRITICAL)
 - [ ] Add integration tests for TCP connection flow
 - [ ] Update README.md with native engine benefits
-- [ ] Update docs/getting-started.md
-- [ ] Update docs/architecture.md
+- [ ] Update docs/Getting-Started.md
+- [ ] Update docs/Architecture.md
 - [ ] Create internal/integrations/ structure
 - [ ] Add DEX parser to roadmap with timeline
 

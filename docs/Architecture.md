@@ -1,7 +1,7 @@
 # Architecture
 
 This document describes how JABARI is built and why. It targets contributors
-and reviewers; operators should read the [Getting started](getting-started.md)
+and reviewers; operators should read the [Getting started](Getting-Started.md)
 guide instead.
 
 ## Design goals
@@ -80,7 +80,7 @@ discovery → enumeration → analysis → validation → risk → reporting
 An optional final stage, `poc`, is appended only when explicitly requested
 (`--poc` on `assess` or the standalone `jabari poc` command). It reproduces
 confirmed findings against the authorized target and is gated by target
-authorization and per-module risk; see [PoC Modules](poc.md).
+authorization and per-module risk; see [PoC Modules](PoC.md).
 
 - Each stage is timed and recorded on the session.
 - A stage error fails the session with a non-zero exit code and a recorded
@@ -141,7 +141,7 @@ type Rule interface {
 ```
 
 The builtin set (`internal/rules/builtin`) currently provides `AND-001` …
-`AND-007`. See [Rules](rules.md).
+`AND-007`. See [Rules](Rules.md).
 
 ## Risk model
 
@@ -157,7 +157,7 @@ Level 4: critical
 ```
 
 Severity and confidence are independent, model-level concepts; see
-[Models](models.md) and [Reporting](reporting.md).
+`pkg/models` and [Reporting](Reporting.md).
 
 ## Reporting
 
@@ -175,7 +175,7 @@ sessions.
 3. environment variables (`JABARI_*` / `ANDROIDSEC_*`)
 4. CLI flags
 
-See [Configuration](configuration.md).
+See [Configuration](Configuration.md).
 
 ## Authorized-only flow
 
