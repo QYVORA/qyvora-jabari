@@ -21,8 +21,8 @@ func newFakeTransport() *fakeTransport {
 }
 
 func (f *fakeTransport) Connect(_ context.Context) error { return nil }
-func (f *fakeTransport) Disconnect() error                 { return nil }
-func (f *fakeTransport) String() string                    { return "fake" }
+func (f *fakeTransport) Disconnect() error               { return nil }
+func (f *fakeTransport) String() string                  { return "fake" }
 func (f *fakeTransport) Info(_ context.Context) (*models.DeviceInfo, error) {
 	return &models.DeviceInfo{}, nil
 }

@@ -38,7 +38,7 @@ USERICON   := $(HOME)/.local/share/icons/hicolor/512x512/apps
 USERPIXMAP := $(HOME)/.local/share/pixmaps
 USERAPP    := $(HOME)/.local/share/applications
 
-.PHONY: all build test vet fmt check install install-user uninstall uninstall-user clean
+.PHONY: all build test test-race vet fmt check install install-user uninstall uninstall-user clean
 
 all: build
 
@@ -47,7 +47,10 @@ build:
 	ln -sf $(BINARY) bin/$(ALIAS)
 
 test:
-	go test ./...
+	go test ./... -count=1 -timeout 60s
+
+test-race:
+	go test -race ./... -count=1 -timeout 120s
 
 vet:
 	go vet ./...
