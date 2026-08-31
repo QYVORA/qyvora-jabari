@@ -80,7 +80,7 @@ installs the jabari icon with a Start Menu shortcut:
 irm https://raw.githubusercontent.com/QYVORA/qyvora-jabari/main/install.ps1 | iex
 ```
 
-Building from source requires Go 1.21+ (project targets the toolchain in
+Building from source requires Go 1.26+ (project targets the toolchain in
 `go.mod`) and, for USB or ADB-over-network targets, the Android platform-tools
 (`adb`).
 

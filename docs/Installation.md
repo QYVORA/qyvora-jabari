@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **Go 1.21+** (build from source). The project's `go.mod` pins the
+- **Go 1.26+** (build from source). The project's `go.mod` pins the
   toolchain.
 - **Android platform-tools** (`adb`) on `PATH` for USB and network
   assessments.
