@@ -14,7 +14,6 @@ import (
 // text.
 func renderTerminal(w io.Writer, s *models.Session) error {
 	writef(w, "%s\n", strings.TrimRight(banner.Art, "\n"))
-	writef(w, "%s\n", repeat("─", 46))
 	writef(w, "\n")
 
 	writef(w, "Session\n")
@@ -87,12 +86,4 @@ func renderTerminal(w io.Writer, s *models.Session) error {
 		}
 	}
 	return nil
-}
-
-func repeat(s string, n int) string {
-	out := ""
-	for i := 0; i < n; i++ {
-		out += s
-	}
-	return out
 }

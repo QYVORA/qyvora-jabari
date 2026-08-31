@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/fatih/color"
 )
@@ -130,16 +129,6 @@ func (l *Logger) PrintTable(header []string, rows [][]string) {
 		}
 	}
 
-	sep := func() {
-		for i, w := range colWidths {
-			if i > 0 {
-				_, _ = fmt.Fprint(l.writer, "-+-")
-			}
-			_, _ = fmt.Fprint(l.writer, strings.Repeat("-", w))
-		}
-		_, _ = fmt.Fprintln(l.writer)
-	}
-
 	for i, h := range header {
 		if i > 0 {
 			_, _ = fmt.Fprint(l.writer, " | ")
@@ -147,7 +136,6 @@ func (l *Logger) PrintTable(header []string, rows [][]string) {
 		_, _ = color.New(color.FgWhite, color.Bold).Fprintf(l.writer, "%-*s", colWidths[i], h)
 	}
 	_, _ = fmt.Fprintln(l.writer)
-	sep()
 
 	for _, row := range rows {
 		for i, cell := range row {

@@ -34,7 +34,6 @@ Integrations are optional tools that extend Jabari's functionality.`,
 				}
 
 				fmt.Printf("\n%s\n", cat)
-				fmt.Println("────────────────────────────────")
 
 				for _, cap := range caps {
 					symbol := ""
@@ -53,7 +52,7 @@ Integrations are optional tools that extend Jabari's functionality.`,
 
 			// Summary
 			native, integration, missing := capabilities.Summary()
-			fmt.Printf("\n────────────────────────────────\n")
+			fmt.Printf("\n")
 			fmt.Printf("Native: %d  |  Integrations: %d  |  Missing: %d\n", native, integration, missing)
 			fmt.Printf("\n✓ = native  ○ = available integration  ✗ = missing integration\n")
 

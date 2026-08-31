@@ -29,7 +29,7 @@ const (
 	ansiDeep = "\x1b[38;2;25;34;43m"
 )
 
-// sectionWidth is the fixed visible width of every console section rule.
+// consoleSectionWidth is the default layout width used by the console HUD.
 const consoleSectionWidth = 60
 
 // consoleUI renders styled output for the interactive console. Colors are
@@ -81,27 +81,20 @@ func (u *consoleUI) BoldWhite(s string) string { return u.paint(s, ansiBold+ansi
 // DimWhite paints a string dim white (muted).
 func (u *consoleUI) DimWhite(s string) string { return u.paint(s, ansiDim+ansiWhite) }
 
-// Section prints a fixed-width horizontal rule carrying the title, e.g.
-// "──────────────────────── Core ─────────────────────────". Every line is
-// exactly consoleSectionWidth visible columns wide.
+// Section prints a clean section header. The title is emphasized with the
+// brand accent (uppercase) and whitespace rather than a full-width rule.
 func (u *consoleUI) Section(title string) {
 	label := strings.TrimSpace(title)
 	if label == "" {
-		u.Rule()
+		_, _ = fmt.Fprintln(u.w)
 		return
 	}
-	inner := consoleSectionWidth - runeWidth(label) - 2
-	if inner < 2 {
-		inner = 2
-	}
-	left := inner / 2
-	right := inner - left
-	_, _ = fmt.Fprintf(u.w, "\n%s\n", u.DimWhite(strings.Repeat("─", left)+" "+label+" "+strings.Repeat("─", right)))
+	_, _ = fmt.Fprintf(u.w, "\n  %s\n", u.Green(strings.ToUpper(label)))
 }
 
-// Rule prints a full-width dim rule.
+// Rule prints a soft section break — a blank line, never a rule line.
 func (u *consoleUI) Rule() {
-	_, _ = fmt.Fprintln(u.w, u.DimWhite(strings.Repeat("─", consoleSectionWidth)))
+	_, _ = fmt.Fprintln(u.w)
 }
 
 // Clear clears the terminal screen (a no-op when not a terminal).

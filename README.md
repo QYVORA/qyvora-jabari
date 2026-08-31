@@ -141,7 +141,6 @@ Example terminal output:
 
 ```
 ANDROIDSEC
-──────────────────────────────────────────────
 
 Session
   ID:      sess-9f2c1e4b7a

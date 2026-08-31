@@ -58,7 +58,6 @@
 **Output Example:**
 ```
 Android Engine
-────────────────────────────────
  ✓ Device discovery (native)
  ✓ TCP transport (native)
  ○ USB transport (integration - adb binary)
@@ -67,7 +66,6 @@ Android Engine
  ✓ Package enumeration (native)
 
 APK Engine
-────────────────────────────────
  ✓ APK container parsing (native)
  ✓ Manifest parsing (native)
  ✓ Certificate inspection (native)
@@ -76,7 +74,6 @@ APK Engine
  ✓ Permission analysis (native)
 
 Analysis Engine
-────────────────────────────────
  ✓ Security rules (native)
  ✓ Evidence collection (native)
  ✓ Risk scoring (native)
@@ -84,7 +81,6 @@ Analysis Engine
  ✓ HTML reporting (native)
 
 Optional Integrations
-────────────────────────────────
  ✗ Frida (missing)
  ✗ JADX (missing)
  ✗ Apktool (missing)
