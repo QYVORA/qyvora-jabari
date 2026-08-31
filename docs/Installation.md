@@ -9,6 +9,25 @@
 - An **authorized** target device or emulator for live assessments. None is
   needed to build or test.
 
+## Quick install (prebuilt binaries)
+
+The zero-config installer downloads the checksum-verified prebuilt binary for
+your platform and installs the jabari icon with a desktop entry / Start Menu
+shortcut — no Go toolchain required.
+
+```sh
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/QYVORA/qyvora-jabari/main/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/QYVORA/qyvora-jabari/main/install.ps1 | iex
+```
+
+On Windows this installs under `%LOCALAPPDATA%\Programs\jabari\bin`, adds it to
+your user PATH, and creates a Start Menu shortcut with the jabari icon. Pin
+`$env:JABARI_VERSION` or `$env:JABARI_PREFIX` to control the version or
+location.
+
 ## Build
 
 ```sh
@@ -100,8 +119,8 @@ What it does:
 3. Compares versions semantically (`v1.10.0 > v1.9.0`) and reports whether an
    update exists.
 4. Downloads the release artifact built for your OS and CPU architecture
-   (`jabari-linux-amd64`, `jabari-darwin-arm64`, `jabari-windows-amd64.exe`, …).
-5. Verifies its SHA-256 against the `SHA256SUMS` manifest published with the
+   (`jabari-linux-amd64`, `jabari-macos-arm64`, `jabari-windows-amd64.exe`, …).
+5. Verifies its SHA-256 against the `checksums.txt` manifest published with the
    release; installation never proceeds on a mismatch.
 6. Swaps the new binary in atomically, preserving the original file permissions.
 7. Cleans up all temporary files and confirms the new version.

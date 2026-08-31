@@ -89,12 +89,15 @@ func releaseConfig() selfupdate.Config {
 		},
 		ArtifactName: func(goos, goarch string) string {
 			name := fmt.Sprintf("jabari-%s-%s", goos, goarch)
+			if goos == "darwin" {
+				name = fmt.Sprintf("jabari-macos-%s", goarch)
+			}
 			if goos == "windows" {
 				name += ".exe"
 			}
 			return name
 		},
-		ChecksumAsset: func(string) string { return "SHA256SUMS" },
+		ChecksumAsset: func(string) string { return "checksums.txt" },
 	}
 }
 

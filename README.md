@@ -64,8 +64,25 @@ instrumentation, exploitation validation, ecosystem integration).
 
 ## Install
 
-Requires Go 1.21+ (project targets the toolchain in `go.mod`) and, for USB or
-ADB-over-network targets, the Android platform-tools (`adb`).
+The quickest way is the zero-config installer — it detects your platform
+and installs the checksum-verified prebuilt binary plus the jabari icon and
+desktop entry:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/QYVORA/qyvora-jabari/main/install.sh | bash
+```
+
+On Windows, use the PowerShell installer — it downloads the checksum-verified
+binary under `%LOCALAPPDATA%\Programs\jabari\bin`, adds it to your PATH, and
+installs the jabari icon with a Start Menu shortcut:
+
+```powershell
+irm https://raw.githubusercontent.com/QYVORA/qyvora-jabari/main/install.ps1 | iex
+```
+
+Building from source requires Go 1.21+ (project targets the toolchain in
+`go.mod`) and, for USB or ADB-over-network targets, the Android platform-tools
+(`adb`).
 
 ```sh
 make build          # builds bin/jabari and the bin/androidsec alias
@@ -89,7 +106,7 @@ jabari updates             # `jabari update` works as an alias; also available i
 
 Checks the installed version against the latest official QYVORA GitHub
 release, downloads the artifact for your platform, verifies its SHA-256
-against the published `SHA256SUMS`, and swaps the binary in atomically.
+against the published `checksums.txt`, and swaps the binary in atomically.
 Downgrades are refused, permission problems are reported clearly instead of
 escalating on their own, and any failure leaves your current binary untouched —
 no Go toolchain or Git required.

@@ -82,7 +82,7 @@ type Config struct {
 	ArtifactName func(goos, goarch string) string
 
 	// ChecksumAsset returns the name of the release asset holding the
-	// SHA-256 entry for the given artifact, e.g. "SHA256SUMS" or
+	// SHA-256 entry for the given artifact, e.g. "checksums.txt" or
 	// "<artifact>.sha256".
 	ChecksumAsset func(artifact string) string
 
