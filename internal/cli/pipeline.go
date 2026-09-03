@@ -138,6 +138,11 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 	}
 
 	pipe := orchestration.ForProfile(profile)
+	// Offline APK targets have no live transport: use the static-analysis
+	// pipeline (no discovery/enumeration) instead of the device pipeline.
+	if t.Type == models.TargetAPK {
+		pipe = orchestration.ForAPKProfile(profile)
+	}
 	// The poc stage is opt-in: it runs only when explicitly requested on an
 	// authorized target (authorization is enforced by the stage itself).
 	if assessFlags.poc {

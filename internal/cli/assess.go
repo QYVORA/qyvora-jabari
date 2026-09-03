@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -42,6 +44,7 @@ Examples:
 	cmd.PersistentFlags().StringVar(&assessFlags.profile, "profile", "", "assessment profile (quick, standard, deep, application, device, network, compliance, research); default from config")
 	cmd.AddCommand(newAssessUSBCmd())
 	cmd.AddCommand(newAssessIPCmd())
+	cmd.AddCommand(newAssessAPKCmd())
 	return cmd
 }
 
@@ -109,6 +112,42 @@ Only that address is assessed; no surrounding hosts are contacted.`,
 				Name:      "network device " + addr,
 				Type:      models.TargetNetwork,
 				Address:   addr,
+				CreatedAt: nowUTC(),
+			}
+			return assess(cmd, t)
+		},
+	}
+	cmd.Flags().BoolVarP(&authorizationFlags.authorized, "authorized", "y", false,
+		"confirm authorization non-interactively")
+	cmd.Flags().BoolVar(&assessFlags.poc, "poc", false,
+		"run proof-of-concept modules against live findings (requires an authorized target)")
+	cmd.Flags().BoolVar(&assessFlags.pocHighRisk, "poc-high-risk", false,
+		"allow PoC modules that change device state (e.g. android.exported_activity)")
+	return cmd
+}
+
+// newAssessAPKCmd implements "jabari assess apk <path>".
+func newAssessAPKCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "apk <path>",
+		Short: "Statically analyze an offline APK artifact",
+		Long: `Statically analyze the authorized APK artifact at <path>. The package
+is parsed natively (no aapt/apktool) and static configuration rules are
+evaluated against it.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := strings.TrimSpace(args[0])
+			if path == "" {
+				return errs.NewExitError(2, "missing APK path")
+			}
+			if info, err := os.Stat(path); err != nil || info.IsDir() {
+				return errs.NewExitError(2, "not an APK file: "+path)
+			}
+			t := &models.Target{
+				ID:        models.NewID("tgt"),
+				Name:      "apk " + filepath.Base(path),
+				Type:      models.TargetAPK,
+				Address:   path,
 				CreatedAt: nowUTC(),
 			}
 			return assess(cmd, t)

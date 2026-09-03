@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,6 +29,7 @@ be assessed.`,
 		"confirm authorization for the target non-interactively")
 	cmd.AddCommand(newTargetUSBCmd())
 	cmd.AddCommand(newTargetIPCmd())
+	cmd.AddCommand(newTargetAPKCmd())
 	cmd.AddCommand(newTargetShowCmd())
 	cmd.AddCommand(newTargetListCmd())
 	return cmd
@@ -128,6 +131,43 @@ surrounding subnet.`,
 				return errors.NewExitError(2, "setting target: "+err.Error())
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (network:%s)\n", t.Name, addr)
+			return nil
+		},
+	}
+}
+
+// newTargetAPKCmd implements "jabari target apk <path>" for an offline APK
+// artifact. The package is analyzed statically; there is no live device.
+func newTargetAPKCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "apk <path>",
+		Short: "Select an offline APK for static analysis",
+		Long: `Select an APK artifact by its file path as the current target. The
+package is analyzed statically; there is no live device behind it.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := strings.TrimSpace(args[0])
+			if path == "" {
+				return errors.NewExitError(2, "missing APK path")
+			}
+			if info, err := os.Stat(path); err != nil || info.IsDir() {
+				return errors.NewExitError(2, "not an APK file: "+path)
+			}
+			t := &models.Target{
+				ID:        models.NewID("tgt"),
+				Name:      "apk " + filepath.Base(path),
+				Type:      models.TargetAPK,
+				Address:   path,
+				CreatedAt: nowUTC(),
+			}
+			authorized, err := authorize(cmd, t)
+			if err != nil {
+				return err
+			}
+			if err := targets.Set(authorized); err != nil {
+				return errors.NewExitError(2, "setting target: "+err.Error())
+			}
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Target set: %s (apk:%s)\n", t.Name, path)
 			return nil
 		},
 	}
