@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/QYVORA/qyvora-jabari/internal/analysis"
+	"github.com/QYVORA/qyvora-jabari/internal/apkstage"
 	"github.com/QYVORA/qyvora-jabari/internal/core"
 	"github.com/QYVORA/qyvora-jabari/internal/discovery"
 	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
@@ -149,6 +150,20 @@ func ForProfile(p Profile) *Pipeline {
 	default:
 		pipe.Add(&enumeration.Stage{})
 	}
+	pipe.Add(&analysis.Stage{})
+	pipe.Add(&validation.Stage{})
+	pipe.Add(&risk.Stage{})
+	return pipe
+}
+
+// ForAPKProfile builds the stage list for an offline APK target. There is no
+// live device, so the transport-bound discovery and enumeration stages are
+// replaced by the static apk-analysis stage, which parses the package into
+// the application inventory before analysis runs. Validation and risk run
+// unchanged.
+func ForAPKProfile(_ Profile) *Pipeline {
+	pipe := NewPipeline()
+	pipe.Add(&apkstage.Stage{})
 	pipe.Add(&analysis.Stage{})
 	pipe.Add(&validation.Stage{})
 	pipe.Add(&risk.Stage{})

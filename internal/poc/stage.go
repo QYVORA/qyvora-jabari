@@ -40,7 +40,7 @@ func (s *Stage) Run(ctx context.Context, env *core.Env) error {
 		return errs.NewExitError(3, "poc stage requires target authorization; re-run with --authorized")
 	}
 	// APK-only targets have no live device to prove anything on.
-	if env.Transport == nil {
+	if env.Target.Type == models.TargetAPK {
 		return nil
 	}
 
