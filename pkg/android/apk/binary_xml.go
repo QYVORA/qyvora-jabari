@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 // Binary XML chunk types
@@ -258,20 +260,37 @@ type ManifestInfo struct {
 	Providers            []string
 }
 
-// parseStartElement extracts data from a start element
+// Attribute value data types (android.util.TypedValue). Only the subset an
+// AndroidManifest commonly uses is enumerated; other types fall back to a
+// decimal rendering of the raw data.
+const (
+	attrTypeReference  = 0x01 // resource reference
+	attrTypeString     = 0x03 // string pool index in data
+	attrTypeIntDec     = 0x10 // decimal integer
+	attrTypeIntHex     = 0x11 // hexadecimal integer
+	attrTypeIntBoolean = 0x12 // 0 / 0xFFFFFFFF
+)
+
+// parseStartElement extracts the element name and attributes from a start
+// element chunk. The chunk carries a 24-byte header followed by the
+// ResXMLTree_attrExt structure: ns, name, attributeStart, attributeSize,
+// attributeCount, idIndex, classIndex, styleIndex. The name and attribute
+// table offsets are read from those fields (the old code read them from the
+// namespace slot, which broke parsing of real manifests).
 func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo) {
 	if len(data) < 36 {
 		return
 	}
 
-	nameIdx := int(binary.LittleEndian.Uint32(data[16:20]))
+	nameIdx := int(binary.LittleEndian.Uint32(data[20:24]))
 	elementName := p.GetString(nameIdx)
 
-	// Extract attributes
-	attrStart := binary.LittleEndian.Uint16(data[20:22])
-	attrCount := binary.LittleEndian.Uint16(data[26:28])
+	// attributeStart is relative to the start of the attribute extension,
+	// which begins after the 16-byte node header.
+	attrStart := binary.LittleEndian.Uint16(data[24:26])
+	attrCount := binary.LittleEndian.Uint16(data[28:30])
 
-	attrs := p.parseAttributes(data[int(attrStart):], int(attrCount))
+	attrs := p.parseAttributes(data[16+int(attrStart):], int(attrCount))
 
 	// Process based on element name
 	switch elementName {
@@ -282,6 +301,11 @@ func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo)
 		if ver, ok := attrs["versionName"]; ok {
 			manifest.VersionName = ver
 		}
+		if vc, ok := attrs["versionCode"]; ok {
+			if n, err := strconv.Atoi(strings.TrimSpace(vc)); err == nil {
+				manifest.VersionCode = int64(n)
+			}
+		}
 
 	case "uses-permission":
 		if name, ok := attrs["name"]; ok {
@@ -289,17 +313,29 @@ func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo)
 		}
 
 	case "uses-sdk":
-		// Parse SDK versions
+		if ms, ok := attrs["minSdkVersion"]; ok {
+			if n, err := strconv.Atoi(strings.TrimSpace(ms)); err == nil {
+				manifest.MinSDK = n
+			}
+		}
+		if ts, ok := attrs["targetSdkVersion"]; ok {
+			if n, err := strconv.Atoi(strings.TrimSpace(ts)); err == nil {
+				manifest.TargetSDK = n
+			}
+		}
 
 	case "application":
 		if dbg, ok := attrs["debuggable"]; ok {
-			manifest.Debuggable = (dbg == "true" || dbg == "-1")
+			manifest.Debuggable = dbg == "true"
 		}
 		if bkp, ok := attrs["allowBackup"]; ok {
-			manifest.AllowBackup = (bkp == "true" || bkp == "-1")
+			manifest.AllowBackup = bkp == "true"
+		}
+		if clr, ok := attrs["usesCleartextTraffic"]; ok {
+			manifest.UsesCleartextTraffic = clr == "true"
 		}
 
-	case "activity":
+	case "activity", "activity-alias":
 		if name, ok := attrs["name"]; ok {
 			manifest.Activities = append(manifest.Activities, name)
 		}
@@ -309,7 +345,7 @@ func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo)
 			manifest.Services = append(manifest.Services, name)
 		}
 
-	case "receiver":
+	case "receiver", "receiver-alias":
 		if name, ok := attrs["name"]; ok {
 			manifest.Receivers = append(manifest.Receivers, name)
 		}
@@ -321,7 +357,10 @@ func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo)
 	}
 }
 
-// parseAttributes extracts attributes from an element
+// parseAttributes extracts attributes from an element's attribute table. Each
+// attribute is 20 bytes: ns, name (string pool index), rawValue, then an
+// 8-byte Res_value (size, res0, dataType, data). The value is decoded from the
+// typed data field rather than assuming every value is a string pool index.
 func (p *BinaryXMLParser) parseAttributes(data []byte, count int) map[string]string {
 	attrs := make(map[string]string)
 
@@ -331,16 +370,40 @@ func (p *BinaryXMLParser) parseAttributes(data []byte, count int) map[string]str
 			break
 		}
 
-		attrData := data[pos : pos+20]
-		nameIdx := int(binary.LittleEndian.Uint32(attrData[4:8]))
-		valueIdx := int(binary.LittleEndian.Uint32(attrData[8:12]))
-
-		name := p.GetString(nameIdx)
-		value := p.GetString(valueIdx)
-
-		if name != "" {
-			attrs[name] = value
+		attr := data[pos : pos+20]
+		name := p.GetString(int(binary.LittleEndian.Uint32(attr[4:8])))
+		if name == "" {
+			continue
 		}
+
+		dataType := attr[15]
+		data := binary.LittleEndian.Uint32(attr[16:20])
+
+		var value string
+		switch dataType {
+		case attrTypeString:
+			value = p.GetString(int(data))
+		case attrTypeIntBoolean:
+			if data != 0 {
+				value = "true"
+			} else {
+				value = "false"
+			}
+		case attrTypeIntDec, attrTypeIntHex:
+			value = strconv.FormatUint(uint64(data), 10)
+		default:
+			// A resource reference (or an unhandled type): prefer the raw
+			// string index when present, otherwise render the data as decimal.
+			if raw := binary.LittleEndian.Uint32(attr[8:12]); raw != 0 {
+				if str := p.GetString(int(raw)); str != "" {
+					value = str
+					break
+				}
+			}
+			value = strconv.FormatUint(uint64(data), 10)
+		}
+
+		attrs[name] = value
 	}
 
 	return attrs
