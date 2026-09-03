@@ -9,9 +9,9 @@ import (
 )
 
 // NewForTarget builds the transport that matches a target's type. USB targets
-// get a USBTransport; network targets get a NetworkTransport. APK targets have
-// no live transport and return ErrUnsupported because they are analyzed
-// statically rather than connected to.
+// get a USBTransport; network targets get a NetworkTransport. APK targets are
+// analyzed statically rather than connected to, so they get a no-op
+// StaticTransport (never a live connection).
 func NewForTarget(t *models.Target, timeout time.Duration) (Transport, error) {
 	if t == nil {
 		return nil, fmt.Errorf("cannot build transport for nil target")
@@ -30,6 +30,10 @@ func NewForTarget(t *models.Target, timeout time.Duration) (Transport, error) {
 			}
 		}
 		return NewNetworkTransport(t.Address, port, timeout)
+	case models.TargetAPK:
+		// APK targets have no live device; they are analyzed statically, so
+		// bind a no-op static transport rather than erroring.
+		return &StaticTransport{}, nil
 	default:
 		return nil, fmt.Errorf("%w: target type %q", ErrUnsupported, t.Type)
 	}

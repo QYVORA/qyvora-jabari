@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -58,8 +59,35 @@ func TestNewForTargetNetwork(t *testing.T) {
 	}
 }
 
-func TestNewForTargetUnsupported(t *testing.T) {
-	if _, err := NewForTarget(&models.Target{Type: models.TargetAPK}, 0); err == nil {
-		t.Error("APK targets must not build a live transport")
+func TestNewForTargetUnknownType(t *testing.T) {
+	if _, err := NewForTarget(&models.Target{Type: models.TargetType("bogus")}, 0); err == nil {
+		t.Error("unknown target types must not build a transport")
+	}
+}
+
+func TestNewForTargetAPKReturnsStaticTransport(t *testing.T) {
+	tr, err := NewForTarget(&models.Target{Type: models.TargetAPK, Address: "/tmp/app.apk"}, 0)
+	if err != nil {
+		t.Fatalf("NewForTarget(APK): %v", err)
+	}
+	if _, ok := tr.(*StaticTransport); !ok {
+		t.Fatalf("expected *StaticTransport, got %T", tr)
+	}
+}
+
+func TestStaticTransportIsNonOperational(t *testing.T) {
+	tr := &StaticTransport{}
+	ctx := context.TODO()
+	if err := tr.Connect(ctx); err != nil {
+		t.Errorf("Connect returned error: %v", err)
+	}
+	if err := tr.Disconnect(); err != nil {
+		t.Errorf("Disconnect returned error: %v", err)
+	}
+	if _, err := tr.Info(ctx); err == nil {
+		t.Error("StaticTransport.Info must be unsupported")
+	}
+	if _, err := tr.Execute(ctx, models.Request{}); err == nil {
+		t.Error("StaticTransport.Execute must be unsupported")
 	}
 }
