@@ -218,6 +218,7 @@ func TestAllRulesProduceEvidence(t *testing.T) {
 			UsesCleartext: true,
 			Debuggable:    true,
 			Permissions:   []string{"android.permission.CAMERA", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_CONTACTS", "android.permission.RECORD_AUDIO"},
+			Attributes:    map[string]string{"debug_signed": "true"},
 		}},
 	}
 
@@ -232,6 +233,7 @@ func TestAllRulesProduceEvidence(t *testing.T) {
 		outdatedAndroidRule,
 		testKeysRule,
 		excessivePermsRule,
+		debugSignedRule,
 	} {
 		findings, err := rule.Evaluate(ctx, ec)
 		if err != nil {
@@ -410,5 +412,38 @@ func TestAND010DoesNotFireWithFewPermissions(t *testing.T) {
 	}
 	if len(findings) != 0 {
 		t.Errorf("AND-010 should not fire with <4 dangerous perms, got %d findings", len(findings))
+	}
+}
+
+func TestAND012DebugSigned(t *testing.T) {
+	reg := newRegistry(t)
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Apps: []models.Application{{
+			PackageName: "com.example.app",
+			Attributes:  map[string]string{"debug_signed": "true"},
+		}},
+	})
+	f := findByRuleID(findings, "AND-012")
+	if f == nil {
+		t.Fatal("AND-012 did not fire for debug-signed APK")
+	}
+	if f.Severity != models.SeverityHigh {
+		t.Errorf("severity = %q, want high", f.Severity)
+	}
+	if f.Attributes["package"] != "com.example.app" {
+		t.Errorf("package attribute = %q", f.Attributes["package"])
+	}
+}
+
+func TestAND012DoesNotFireOnProductionSigned(t *testing.T) {
+	reg := newRegistry(t)
+	findings := reg.Evaluate(context.Background(), rules.EvaluationContext{
+		Apps: []models.Application{{
+			PackageName: "com.example.app",
+			Attributes:  map[string]string{},
+		}},
+	})
+	if findByRuleID(findings, "AND-012") != nil {
+		t.Error("AND-012 fired for a production-signed APK")
 	}
 }

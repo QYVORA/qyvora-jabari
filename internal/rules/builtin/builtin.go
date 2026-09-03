@@ -29,6 +29,7 @@ func Register(r *rules.Registry) error {
 		outdatedAndroidRule,
 		testKeysRule,
 		excessivePermsRule,
+		debugSignedRule,
 	} {
 		if err := r.Register(rule); err != nil {
 			return err
@@ -433,6 +434,35 @@ var excessivePermsRule = &appRule{
 		})
 		f.Impact = "Wide permission surface increases damage from app compromise."
 		f.Recommendation = "Request only the permissions strictly required by the app's functionality."
+		return []models.Finding{f}, nil
+	},
+}
+
+// AND-012 flags an APK signed with a debug certificate (e.g. CN=Android
+// Debug). Debug-signed packages are not trusted for distribution and are a
+// common marker of pre-release or tampered builds.
+var debugSignedRule = &appRule{
+	id:       "AND-012",
+	name:     "Debug-Signed APK",
+	category: "application-security",
+	description: "The application package is signed with a debug certificate " +
+		"(e.g. CN=Android Debug), which is not acceptable for distribution.",
+	severity: models.SeverityHigh,
+	mitre:    []string{"T1402"},
+	eval: func(_ context.Context, app models.Application) ([]models.Finding, error) {
+		if app.Attributes["debug_signed"] != "true" {
+			return nil, nil
+		}
+		f := finding("AND-012", "Debug-Signed APK",
+			"The package is signed with a debug certificate; debug-signed builds are not trusted for distribution.",
+			models.SeverityHigh, models.ConfidenceConfirmed)
+		f.Evidence = append(f.Evidence, models.Evidence{
+			Kind:    models.KindConfiguration,
+			Source:  "debug_signed",
+			Content: "true",
+		})
+		f.Impact = "Debug signatures can be forged and are a sign of an untrusted or tampered build."
+		f.Recommendation = "Sign release builds with a production key and reject debug-signed packages."
 		return []models.Finding{f}, nil
 	},
 }
