@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **ANSI hygiene** — terminal colors are disabled when stdout is piped or
+  redirected or `NO_COLOR` is set.
+
 ### Added
+
 
 - Foundation release of the JABARI Android Security Assessment Framework
   - `assess` pipeline: discovery → enumeration → analysis → validation →

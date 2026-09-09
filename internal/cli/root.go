@@ -223,6 +223,20 @@ func initPrinter() {
 		return
 	}
 	printer.SetFormat(parsed)
+	// ANSI color is a terminal-only nicety: disable it when stdout is not an
+	// interactive device or when the caller opts out via NO_COLOR, so no
+	// escape sequences leak into redirected or piped output.
+	color.NoColor = !stdoutIsTerminal() || os.Getenv("NO_COLOR") != ""
+}
+
+// stdoutIsTerminal reports whether standard output is an interactive
+// character device.
+func stdoutIsTerminal() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
 }
 
 // requireTarget returns the current target or fails with a helpful message
