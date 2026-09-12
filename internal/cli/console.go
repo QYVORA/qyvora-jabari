@@ -297,13 +297,18 @@ func (c *jabariConsole) help() {
 	}
 }
 
-// printVersion prints the build version, commit, date and build user.
+// printVersion prints the build version, commit, date, build user and public
+// QYVORA contact details.
 func (c *jabariConsole) printVersion() {
 	info := version.GetInfo()
 	c.ui.Status(">", "jabari %s", info.Version)
+	c.ui.KV("framework", info.Framework)
 	c.ui.KV("commit", info.Commit)
 	c.ui.KV("built", info.Date)
 	c.ui.KV("build user", info.BuildUser)
+	c.ui.KV("website", info.Website)
+	c.ui.KV("support", info.Support)
+	c.ui.KV("built in", info.BuiltIn)
 }
 
 // cmdUpdates runs the same self-update flow as `jabari updates` from inside

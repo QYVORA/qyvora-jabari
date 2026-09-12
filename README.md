@@ -115,6 +115,7 @@ no Go toolchain or Git required.
 
 ```sh
 # Drop into the interactive console (Metasploit-style REPL)
+# On a real terminal only; piped/redirected stdin uses a plain line reader.
 jabari
 
 # Assess a connected device (interactive authorization)
@@ -199,6 +200,11 @@ pkg/adb/               minimal adb wrapper
 pkg/models/            shared data model
 pkg/utilities/         small shared helpers
 ```
+
+## Contact
+
+QYVORA OffSec — Tamale, Ghana
+Website: https://qyvora.netlify.app · Security/Support: qyvorasec@gmail.com
 
 ## License
 

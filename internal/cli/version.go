@@ -14,7 +14,7 @@ func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
-		Long:  "Display the version, build commit, build date, and build user.",
+		Long:  "Display the version, build commit, build date, build user, and public QYVORA contact details.",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			info := version.GetInfo()
@@ -25,9 +25,14 @@ func newVersionCmd() *cobra.Command {
 			}
 
 			fmt.Printf("jabari %s\n", info.Version)
-			fmt.Printf("  Commit:    %s\n", info.Commit)
-			fmt.Printf("  Built:     %s\n", info.Date)
-			fmt.Printf("  BuildUser: %s\n", info.BuildUser)
+			fmt.Printf("  framework:  %s\n", info.Framework)
+			fmt.Printf("  commit:     %s\n", info.Commit)
+			fmt.Printf("  built:      %s\n", info.Date)
+			fmt.Printf("  by:         %s\n", info.BuildUser)
+			fmt.Printf("  go:         %s %s/%s\n", info.GoVersion, info.OS, info.Arch)
+			fmt.Printf("  website:    %s\n", info.Website)
+			fmt.Printf("  support:    %s\n", info.Support)
+			fmt.Printf("  built in:   %s\n", info.BuiltIn)
 			return nil
 		},
 	}
