@@ -52,8 +52,29 @@ report:
 | `log.level` | `info` | `debug`, `info`, `warn`, `error` |
 | `report.dir` | `reports` | session output directory |
 | `report.format` | `terminal` | default report format for `--report` |
+| `transport.native` | `false` | network targets use the native ADB-protocol transport (no `adb` binary dependency) |
 
 Only keys actually read by the framework are listed; extra keys are ignored.
+
+### Native transport
+
+`transport.native` (`QYVORA_TRANSPORT_NATIVE=true`) switches network targets
+(`adb connect` style, `host:port`) to Jabari's own implementation of the ADB
+wire protocol instead of shelling out to the `adb` binary. This is useful in
+locked-down environments where the Android SDK Platform Tools are not
+installed.
+
+Constraints:
+
+- **Network targets only.** The flag is honored only for network targets; USB
+  and APK targets keep their existing transports (legacy USB via the `adb`
+  binary, static-only APK analysis). The native USB path requires libusb and
+  is **not implemented**.
+- **Default port.** A `host`-only address assumes the standard ADB port
+  `5555`; a full `host:port` address is honored as given.
+- **Scope is unchanged.** The authorization gate (`--authorized`, `-y`, or
+  `QYVORA_AUTHORIZED=true`) applies identically; transport choice never
+  bypasses authorization.
 
 ## Environment variables
 

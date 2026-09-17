@@ -14,20 +14,29 @@ policy in your jurisdiction.
 Every run passes an authorization gate before any device interaction:
 
 1. The target is identified (USB device or specific IP).
-2. The operator confirms authorization (interactively or via
-   `-y`/config/env).
+2. The operator confirms authorization — interactively on a terminal, or
+   non-interactively via `-y`/`--authorized`, the `authorized` config key, or
+   the `QYVORA_AUTHORIZED=true` environment variable. Non-interactive runs
+   with no grant **fail hard with exit code 3** rather than proceeding
+   unauthorized.
 3. The session records that authorization.
+
+The authorization grant is recorded per-session with its scope string and
+granting method, and is never implied by the target type or transport (the
+native transport honors the identical gate).
 
 ## Trust boundaries
 
 ```
- Operator ── jabari (local process) ── adb ── Android target
+ Operator ── jabari (local process) ── adb / native transport ── Android target
                 │
                 └── reports/ sessions/ evidence/
 ```
 
 - **JABARI runs locally** on the operator's machine. The target device is
-  reached only through `adb`.
+  reached through `adb`, or — for network targets configured with
+  `transport.native` — through Jabari's own ADB-protocol client (no `adb`
+  binary). Both paths honor the same authorization gate.
 - **The target is untrusted input.** Device responses are parsed defensively;
   a hostile or malformed device response must not corrupt the session, crash
   the process, or leak host data. Parsers return only what they validate.

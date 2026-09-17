@@ -173,5 +173,5 @@ the full `PocRun`. The schema is identical across the QYVORA frameworks.
 |---|---|
 | 0 | success |
 | 1 | runtime, target/transport, or assessment error |
-| 2 | usage, authorization, configuration, or target-selection error |
-| 3 | authorization declined (PoC stage) |
+| 2 | usage, configuration, or target-selection error |
+| 3 | authorization declined (target authorization gate or PoC stage) |
