@@ -21,6 +21,7 @@ import (
 	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
 	"github.com/QYVORA/qyvora-jabari/internal/logger"
 	"github.com/QYVORA/qyvora-jabari/internal/output"
+	"github.com/QYVORA/qyvora-jabari/internal/reporting"
 	"github.com/QYVORA/qyvora-jabari/internal/target"
 	"github.com/QYVORA/qyvora-jabari/internal/version"
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
@@ -76,9 +77,29 @@ var rootCmd = &cobra.Command{
 	// Validate shared flag/config state before any command runs so an
 	// invalid --output value is rejected as a usage error (exit code 2)
 	// instead of executing the command first.
-	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		if initErr != nil {
 			return errs.NewExitError(2, initErr.Error())
+		}
+		// --events stdout owns stdout: report renders, dry-run text and
+		// command output must route to stderr so stdout carries exactly the
+		// JSONL stream. Combining the stream with a machine report format is
+		// a usage error (exit 2) — a consumer cannot split two machine
+		// streams on the same pipe.
+		if eventsFlag == "stdout" {
+			machine := printer.Format() != output.FormatTerminal
+			if !machine {
+				if f, err := resolveReportFormat(); err == nil {
+					machine = f != reporting.FormatTerminal
+				}
+			}
+			if machine {
+				return errs.NewExitError(2,
+					"cannot combine --events stdout with a machine report format; use --events stderr or --events <file>")
+			}
+			stdoutWriter = os.Stderr
+			printer.SetWriter(os.Stderr)
+			cmd.SetOut(os.Stderr)
 		}
 		return nil
 	},

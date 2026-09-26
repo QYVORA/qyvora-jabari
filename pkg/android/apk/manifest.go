@@ -55,36 +55,50 @@ func (a *APK) parseManifest(f *zip.File) error {
 		})
 	}
 
-	// Convert component names to component structs
+	// Convert component names to component structs. A component's exported flag
+	// is taken from the compiled manifest's android:exported attribute when the
+	// parser captured one; undecorated components fall back to the documented
+	// name/intent-filter heuristic rather than silently reporting nothing.
 	for _, name := range manifestInfo.Activities {
 		a.Activities = append(a.Activities, Activity{
 			Name:     name,
-			Exported: false, // Full detection requires intent-filter analysis
+			Exported: exportedState("activity:"+name, name, manifestInfo.Exported),
 		})
 	}
 
 	for _, name := range manifestInfo.Services {
 		a.Services = append(a.Services, Service{
 			Name:     name,
-			Exported: false,
+			Exported: exportedState("service:"+name, name, manifestInfo.Exported),
 		})
 	}
 
 	for _, name := range manifestInfo.Receivers {
 		a.Receivers = append(a.Receivers, Receiver{
 			Name:     name,
-			Exported: false,
+			Exported: exportedState("receiver:"+name, name, manifestInfo.Exported),
 		})
 	}
 
 	for _, name := range manifestInfo.Providers {
 		a.Providers = append(a.Providers, Provider{
 			Name:     name,
-			Exported: false,
+			Exported: exportedState("provider:"+name, name, manifestInfo.Exported),
 		})
 	}
 
 	return nil
+}
+
+// exportedState resolves a component's exported flag: manifest-declared
+// attribute wins; otherwise inferExported applies the name-pattern heuristic
+// (commit: intent-filter cross-referencing is not yet available, so
+// hasIntentFilter is always false here).
+func exportedState(key, name string, declared map[string]bool) bool {
+	if v, ok := declared[key]; ok {
+		return v
+	}
+	return inferExported(name, false)
 }
 
 // inferExported attempts to determine if a component is exported

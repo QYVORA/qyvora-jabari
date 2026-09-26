@@ -9,6 +9,7 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/core"
 	"github.com/QYVORA/qyvora-jabari/internal/discovery"
 	"github.com/QYVORA/qyvora-jabari/internal/enumeration"
+	"github.com/QYVORA/qyvora-jabari/internal/events"
 	"github.com/QYVORA/qyvora-jabari/internal/orchestration"
 	"github.com/QYVORA/qyvora-jabari/internal/poc"
 	"github.com/QYVORA/qyvora-jabari/internal/validation"
@@ -31,25 +32,55 @@ func newStageCmd(use, short string, run stageRunner) *cobra.Command {
 }
 
 // runSingleStage builds an assessment environment for the current target and
-// executes one stage, persisting and rendering the result.
+// executes one stage, persisting and rendering the result. The JSONL event
+// stream bound by newAssessmentEnv is used when --events is configured.
 func runSingleStage(ctx context.Context, stage core.Stage) error {
 	t, err := requireTarget()
 	if err != nil {
 		return err
 	}
-	env, cleanup, err := newAssessmentEnv(ctx, t, orchestration.Profile(cfg.GetString("profile")))
+	profile := orchestration.Profile(cfg.GetString("profile"))
+	env, cleanup, err := newAssessmentEnv(ctx, t, profile)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
+	if env.Events != nil {
+		env.Events.Info("jabari", events.ScanStarted, map[string]any{
+			"profile":     string(profile),
+			"target_id":   t.ID,
+			"target_type": string(t.Type),
+			"stage":       stage.Name(),
+		})
+	}
+
 	if err := stage.Run(ctx, env); err != nil {
+		if env.Events != nil {
+			env.Events.Fail("jabari", events.Error, map[string]any{"message": err.Error()})
+		}
 		return err
 	}
 	env.Session.Finish()
 
 	if path, err := persistSession(env.Session); err == nil {
 		log.Info("session saved to %s", path)
+		if env.Events != nil {
+			env.Events.Info("jabari", events.ReportGenerated, map[string]any{
+				"path":   path,
+				"format": "json",
+			})
+		}
+	}
+
+	if env.Events != nil {
+		env.Events.Info("jabari", events.ScanCompleted, map[string]any{
+			"findings":   len(env.Session.Findings),
+			"risk_score": env.Session.RiskScore,
+			"risk_level": env.Session.RiskLevel,
+			"stages":     env.Session.Stages,
+			"stage":      stage.Name(),
+		})
 	}
 	return renderSession(ctx, env.Session)
 }
@@ -71,23 +102,54 @@ func runAnalyze(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	env, cleanup, err := newAssessmentEnv(ctx, t, orchestration.Profile(cfg.GetString("profile")))
+	profile := orchestration.Profile(cfg.GetString("profile"))
+	env, cleanup, err := newAssessmentEnv(ctx, t, profile)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
+	if env.Events != nil {
+		env.Events.Info("jabari", events.ScanStarted, map[string]any{
+			"profile":     string(profile),
+			"target_id":   t.ID,
+			"target_type": string(t.Type),
+			"stage":       "analyze",
+		})
+	}
+
 	if t.Device == nil {
 		if err := (&discovery.Stage{}).Run(ctx, env); err != nil {
+			if env.Events != nil {
+				env.Events.Fail("jabari", events.Error, map[string]any{"message": err.Error()})
+			}
 			return err
 		}
 	}
 	if err := (&analysis.Stage{}).Run(ctx, env); err != nil {
+		if env.Events != nil {
+			env.Events.Fail("jabari", events.Error, map[string]any{"message": err.Error()})
+		}
 		return err
 	}
 	env.Session.Finish()
 	if path, err := persistSession(env.Session); err == nil {
 		log.Info("session saved to %s", path)
+		if env.Events != nil {
+			env.Events.Info("jabari", events.ReportGenerated, map[string]any{
+				"path":   path,
+				"format": "json",
+			})
+		}
+	}
+	if env.Events != nil {
+		env.Events.Info("jabari", events.ScanCompleted, map[string]any{
+			"findings":   len(env.Session.Findings),
+			"risk_score": env.Session.RiskScore,
+			"risk_level": env.Session.RiskLevel,
+			"stages":     env.Session.Stages,
+			"stage":      "analyze",
+		})
 	}
 	return renderSession(ctx, env.Session)
 }

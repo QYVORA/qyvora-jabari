@@ -57,6 +57,7 @@ func Load(cfgFile string) (*viper.Viper, error) {
 	v.SetDefault("report.format", "terminal")
 	v.SetDefault("audit.enabled", true)
 	v.SetDefault("timeout.seconds", 30)
+	v.SetDefault("transport.native", false)
 	v.SetDefault("enumeration.detail_limit", 100)
 	// poc.high_risk gates proof-of-concept modules that change device state
 	// (for example launching an activity). It defaults off so PoCs stay

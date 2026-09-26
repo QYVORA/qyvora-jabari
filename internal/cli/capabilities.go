@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/QYVORA/qyvora-jabari/internal/capabilities"
+	"github.com/QYVORA/qyvora-jabari/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -14,9 +15,20 @@ func newCapabilitiesCmd() *cobra.Command {
 		Long: `Display Jabari's native capabilities versus optional external tool integrations.
 
 Native capabilities are built into Jabari and require no external dependencies.
-Integrations are optional tools that extend Jabari's functionality.`,
+Integrations are optional tools that extend Jabari's functionality.
+
+Machine output (-o json) emits a flat list of capability records:
+[{"name": "...", "category": "Android Engine", "status": "native", "description": "..."}]
+Each record's status is "native", "integration" (available) or "missing".`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
+			// Machine formats flatten the categorized table into one list of
+			// capability records so consumers get clean JSON/YAML.
+			if printer.Format() == output.FormatJSON || printer.Format() == output.FormatYAML {
+				printer.Print(capabilities.Detect())
+				return nil
+			}
+
 			byCategory := capabilities.ByCategory()
 
 			// Define category order

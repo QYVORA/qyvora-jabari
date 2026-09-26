@@ -52,20 +52,18 @@ func parseCertificate(f *zip.File) (Certificate, error) {
 	return cert, nil
 }
 
-// VerifySignature checks APK signature integrity
-// This is a placeholder for full APK signature verification
+// VerifySignature reports whether the APK's signature can be asserted as
+// cryptographically verified. Full verification of APK Signature Scheme v1
+// (JAR/CMS), v2, and v3 is not yet implemented; rather than silently
+// returning nil for every signed APK (a false "verified" promise), it
+// returns a descriptive error so consumers never mistake an unverified
+// signature for a verified one. Signer extraction (parseCertificate) and
+// the certificate fingerprint remain reliable.
 func (a *APK) VerifySignature() error {
 	if len(a.Certificates) == 0 {
 		return fmt.Errorf("no certificates found")
 	}
-
-	// Full implementation would:
-	// 1. Verify JAR signature (v1)
-	// 2. Verify APK Signature Scheme v2
-	// 3. Verify APK Signature Scheme v3
-	// 4. Check certificate chain
-
-	return nil
+	return fmt.Errorf("apk signature verification not implemented (v1/v2/v3); integrity not asserted")
 }
 
 // SignatureScheme returns the detected signature scheme(s)

@@ -29,11 +29,11 @@ const (
 
 // Capability represents a single capability
 type Capability struct {
-	Name        string
-	Category    Category
-	Status      Status
-	Description string
-	Binary      string // For integrations
+	Name        string   `json:"name"`
+	Category    Category `json:"category"`
+	Status      Status   `json:"status"`
+	Description string   `json:"description"`
+	Binary      string   `json:"binary,omitempty"`
 }
 
 // Detect returns all capabilities and their status

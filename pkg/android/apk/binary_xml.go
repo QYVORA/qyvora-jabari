@@ -215,6 +215,7 @@ func (p *BinaryXMLParser) DecodeManifest() (*ManifestInfo, error) {
 		Services:    []string{},
 		Receivers:   []string{},
 		Providers:   []string{},
+		Exported:    map[string]bool{},
 	}
 
 	// Simple state machine to parse the manifest
@@ -258,6 +259,12 @@ type ManifestInfo struct {
 	Services             []string
 	Receivers            []string
 	Providers            []string
+	// Exported records the android:exported attribute of each component by
+	// kind ("activity:", "service:", "receiver:", "provider:") when the
+	// compiled manifest declares it explicitly. Components without an
+	// exported attribute are absent from the map and fall back to the
+	// name/intent-filter heuristic.
+	Exported map[string]bool
 }
 
 // Attribute value data types (android.util.TypedValue). Only the subset an
@@ -338,23 +345,40 @@ func (p *BinaryXMLParser) parseStartElement(data []byte, manifest *ManifestInfo)
 	case "activity", "activity-alias":
 		if name, ok := attrs["name"]; ok {
 			manifest.Activities = append(manifest.Activities, name)
+			recordExported(manifest, "activity:"+name, attrs)
 		}
 
 	case "service":
 		if name, ok := attrs["name"]; ok {
 			manifest.Services = append(manifest.Services, name)
+			recordExported(manifest, "service:"+name, attrs)
 		}
 
 	case "receiver", "receiver-alias":
 		if name, ok := attrs["name"]; ok {
 			manifest.Receivers = append(manifest.Receivers, name)
+			recordExported(manifest, "receiver:"+name, attrs)
 		}
 
 	case "provider":
 		if name, ok := attrs["name"]; ok {
 			manifest.Providers = append(manifest.Providers, name)
+			recordExported(manifest, "provider:"+name, attrs)
 		}
 	}
+}
+
+// recordExported stores the android:exported attribute for a manifest
+// component when the compiled XML declares it as a literal boolean. Literal
+// booleans compile to TYPE_INT_BOOLEAN; the parser only trusts that form so
+// resource references (values aapt resolved elsewhere) never masquerade as
+// declarations.
+func recordExported(m *ManifestInfo, kind string, attrs map[string]string) {
+	ev, ok := attrs["exported"]
+	if !ok {
+		return
+	}
+	m.Exported[kind] = ev == "true"
 }
 
 // parseAttributes extracts attributes from an element's attribute table. Each

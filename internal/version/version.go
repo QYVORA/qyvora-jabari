@@ -5,11 +5,19 @@
 //
 //	go build -ldflags "-X github.com/QYVORA/qyvora-jabari/internal/version.Version=<tag> ..."
 //
-// Unstamped dev builds report "dev" — release artifacts must never do so
-// (QYVORA output spec, section 4).
+// The default is the current semantic version; unstamped dev builds keep it
+// and report Commit/Date/BuildUser as "none"/"unknown" (QYVORA output spec,
+// section 4).
 package version
 
 import "runtime"
+
+var (
+	Version   = "0.1.0"
+	Commit    = "none"
+	Date      = "unknown"
+	BuildUser = "unknown"
+)
 
 // Framework is the canonical framework name carried in events and reports.
 const Framework = "jabari"
@@ -21,13 +29,6 @@ const (
 	CompanyURL   = "https://qyvora.netlify.app"
 	CompanyEmail = "qyvorasec@gmail.com"
 	CompanyCity  = "Tamale, Ghana"
-)
-
-var (
-	Version   = "dev"
-	Commit    = "none"
-	Date      = "unknown"
-	BuildUser = "unknown"
 )
 
 // Info is the machine-readable build and company identity.

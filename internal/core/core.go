@@ -30,6 +30,9 @@ type Env struct {
 	// Events is the machine-readable JSONL event emitter, set when the
 	// --events flag is used. Stages must treat a nil emitter as "no stream".
 	Events *events.Emitter
+	// EventsClose finalizes a file-backed event stream. It is nil when no
+	// stream was opened (or the stream needs no explicit close).
+	EventsClose func() error
 	// Apps holds the application inventory collected by the enumeration
 	// stage. It feeds the analysis stage's evaluation context.
 	Apps []models.Application

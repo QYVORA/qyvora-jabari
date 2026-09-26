@@ -39,6 +39,18 @@ func NewForTarget(t *models.Target, timeout time.Duration) (Transport, error) {
 	}
 }
 
+// NewForTargetWithConfig selects the transport for a target honoring the
+// transport.native configuration: network targets may use the native ADB
+// protocol implementation (no adb binary dependency). USB and APK targets
+// keep their existing transports — the native USB path is not implemented
+// and APK targets are static-only.
+func NewForTargetWithConfig(t *models.Target, timeout time.Duration, useNative bool) (Transport, error) {
+	if useNative && t != nil && t.Type == models.TargetNetwork {
+		return NewNativeForTarget(t)
+	}
+	return NewForTarget(t, timeout)
+}
+
 // NewNativeForTarget builds a native transport (no adb binary dependency)
 // Currently only supports network targets. USB support requires libusb.
 func NewNativeForTarget(t *models.Target) (Transport, error) {

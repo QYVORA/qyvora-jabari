@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/QYVORA/qyvora-jabari/internal/events"
 )
 
 // openEventsWriter resolves the --events destination spec into a writer:
@@ -31,17 +29,4 @@ func openEventsWriter(spec string) (io.Writer, func() error, error) {
 		return nil, nil, fmt.Errorf("events file: %w", err)
 	}
 	return f, f.Close, nil
-}
-
-// newEventsEmitter builds an emitter bound to the --events destination. It
-// returns nil (stream disabled) when no destination was requested.
-func newEventsEmitter(execID string) (*events.Emitter, func() error, error) {
-	w, closeFn, err := openEventsWriter(eventsFlag)
-	if err != nil {
-		return nil, nil, err
-	}
-	if w == nil {
-		return nil, nil, nil
-	}
-	return events.New(w, execID), closeFn, nil
 }

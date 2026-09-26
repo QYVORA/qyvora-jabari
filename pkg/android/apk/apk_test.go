@@ -737,6 +737,57 @@ func TestInferExported(t *testing.T) {
 	}
 }
 
+// TestExportedStatePrecedence verifies that explicit manifest android:exported
+// values override the name-pattern heuristic, and that absent entries fall
+// back to inferExported (the documented tiers).
+func TestExportedStatePrecedence(t *testing.T) {
+	declared := map[string]bool{
+		"activity:com.example.MainActivity":     false, // explicit exported=false overrides heuristic "true"
+		"service:com.example.BackgroundService": true,
+	}
+	tests := []struct {
+		key  string
+		name string
+		want bool
+	}{
+		// Explicit declaration present — value honored even when heuristic disagrees.
+		{"activity:com.example.MainActivity", "com.example.MainActivity", false},
+		// Explicit declaration present — value honored.
+		{"service:com.example.BackgroundService", "com.example.BackgroundService", true},
+		// Absent declaration — name-pattern heuristic decides.
+		{"activity:com.example.LoginActivity", "com.example.LoginActivity", true},
+		{"activity:com.example.Server", "com.example.Server", false},
+		{"receiver:com.example.BootReceiver", "com.example.BootReceiver", false},
+	}
+	for _, tt := range tests {
+		got := exportedState(tt.key, tt.name, declared)
+		if got != tt.want {
+			t.Errorf("exportedState(%q, %q, declared) = %v, want %v",
+				tt.key, tt.name, got, tt.want)
+		}
+	}
+}
+
+// TestRecordExported validates the binary-XML exported-attribute capture.
+func TestRecordExported(t *testing.T) {
+	m := &ManifestInfo{Exported: map[string]bool{}}
+	attrs := map[string]string{"name": "com.example.Main"}
+	recordExported(m, "activity:com.example.Main", attrs) // no exported attr
+	if _, ok := m.Exported["activity:com.example.Main"]; ok {
+		t.Error("recordExported populated exported flag when attr absent")
+	}
+	attrs["exported"] = "true"
+	recordExported(m, "activity:com.example.Main", attrs)
+	if !m.Exported["activity:com.example.Main"] {
+		t.Error("recordExported did not store exported=true")
+	}
+	attrs["exported"] = "false"
+	recordExported(m, "activity:com.example.Main", attrs)
+	if m.Exported["activity:com.example.Main"] {
+		t.Error("recordExported did not update exported to false")
+	}
+}
+
 // TestContainsIgnoreCase tests case-insensitive string matching
 func TestContainsIgnoreCase(t *testing.T) {
 	tests := []struct {

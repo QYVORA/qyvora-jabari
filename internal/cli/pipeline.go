@@ -22,8 +22,12 @@ import (
 // newAssessmentEnv builds the shared environment for an assessment run:
 // transport, session, evidence store, and a rule registry with the builtin
 // rules registered. The returned cleanup function disconnects the transport.
+// transport.native opts into the native ADB protocol transport (no adb
+// binary dependency) for network targets; the legacy transport remains the
+// default and the only USB path.
 func newAssessmentEnv(ctx context.Context, t *models.Target, profile orchestration.Profile) (*core.Env, func(), error) {
-	tr, err := transport.NewForTarget(t, timeout)
+	useNative := cfg.GetBool("transport.native")
+	tr, err := transport.NewForTargetWithConfig(t, timeout, useNative)
 	if err != nil {
 		return nil, func() {}, err
 	}
@@ -60,7 +64,25 @@ func newAssessmentEnv(ctx context.Context, t *models.Target, profile orchestrati
 		Config:    cfg,
 	}
 
-	cleanup := func() { _ = tr.Disconnect() }
+	// Bind the optional JSONL event stream to every assessment path (multi-
+	// stage assess, standalone stage commands, analyze) so --events never
+	// silently no-ops. The emitter is closed by cleanup along with the
+	// transport.
+	if eventsFlag != "" {
+		w, closeFn, err := openEventsWriter(eventsFlag)
+		if err != nil {
+			return nil, func() {}, fmt.Errorf("events: %w", err)
+		}
+		env.Events = events.New(w, sess.ID)
+		env.EventsClose = closeFn
+	}
+
+	cleanup := func() {
+		_ = tr.Disconnect()
+		if env.EventsClose != nil {
+			_ = env.EventsClose()
+		}
+	}
 	return env, cleanup, nil
 }
 
@@ -118,17 +140,9 @@ func runPipeline(ctx context.Context, profile orchestration.Profile) (*models.Se
 	}
 	defer cleanup()
 
-	// Bind the optional JSONL event stream to this run before any stage
-	// executes so the full lifecycle (scan.started .. scan.completed) is
-	// captured.
-	emitter, closeStream, err := newEventsEmitter(env.Session.ID)
-	if err != nil {
-		return nil, err
-	}
-	if closeStream != nil {
-		defer func() { _ = closeStream() }()
-	}
-	env.Events = emitter
+	// newAssessmentEnv bound the JSONL event stream to this run (if
+	// --events was configured); emit the lifecycle as stages execute.
+	emitter := env.Events
 	if emitter != nil {
 		emitter.Info("jabari", events.ScanStarted, map[string]any{
 			"profile":     string(profile),

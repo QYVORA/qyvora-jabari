@@ -23,6 +23,13 @@ verbose: false
 quiet: false
 json: false
 
+# Transport: use the native ADB protocol implementation (no adb binary
+# dependency) for network targets. Die devices requiring RSA auth return a
+# clear "authentication not yet implemented" error. USB and APK targets
+# always use their existing transports.
+transport:
+  native: false
+
 # Reporting: directory reports are written to, and the default format used by
 # `assess --report` / `report` when no --format flag is given.
 report:
