@@ -115,9 +115,6 @@ var rootCmd = &cobra.Command{
 		}
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runConsole(cmd.Context())
-	},
 }
 
 // Execute runs the root command against os.Args and returns the process exit
@@ -134,7 +131,18 @@ func Execute() int {
 func ExecuteArgs(args []string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	rootCmd.SetContext(ctx)
+	return ExecuteArgsContext(ctx, args)
+}
+
+// ExecuteArgsContext runs the root command with an explicit argument vector
+// under a caller-supplied context and returns the process exit code.
+//
+// The interactive TUI needs this form. It runs commands in-process on its own
+// goroutine and must be able to cancel a single execution without tearing down
+// the process, so the work is driven by a context the caller owns rather than
+// by process-wide signal handling. That distinction is what makes Ctrl+C cancel
+// the operation instead of the interface.
+func ExecuteArgsContext(ctx context.Context, args []string) int {
 	rootCmd.SetArgs(args)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -157,6 +165,17 @@ func ExecuteArgs(args []string) int {
 }
 
 func init() {
+	// The default action opens the interactive TUI. It is assigned here rather
+	// than in the rootCmd literal because Go's initialisation dependency
+	// analysis follows references through function bodies: runTUI reaches
+	// rootCmd, so naming it inside rootCmd's own initialiser is a cycle, while
+	// init() is exempt from that analysis.
+	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		return runTUI(cmd.Root(), cmd.Context())
+	}
+	rootCmd.AddCommand(commandTUI())
+	rootCmd.AddCommand(newConsoleCommand())
+
 	cobra.OnInitialize(initConfig)
 
 	// Flag-parse failures (unknown flag, bad value) are usage errors and must
