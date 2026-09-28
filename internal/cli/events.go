@@ -25,9 +25,10 @@ import (
 // The returned close function must be called when the stream is done; it is
 // nil when the stream is disabled or a fixed console.
 func openEventsWriter(spec string) (io.Writer, func() error, error) {
-	switch strings.ToLower(spec) {
-	case "", "off", "none", "disable", "disabled":
+	if eventsDisabled(spec) {
 		return nil, nil, nil
+	}
+	switch strings.ToLower(spec) {
 	case "stdout":
 		return os.Stdout, nil, nil
 	case "stderr":
@@ -38,4 +39,18 @@ func openEventsWriter(spec string) (io.Writer, func() error, error) {
 		return nil, nil, fmt.Errorf("events file: %w", err)
 	}
 	return f, f.Close, nil
+}
+
+// eventsDisabled reports whether a --events value asks for no stream at all.
+//
+// The interactive guard and the event plumbing both need this answer, so the
+// words are named once. A value that turns the stream off must not read as a
+// request to send it somewhere: `tool --events off` opens the session
+// happily, because there is nothing for it to contradict.
+func eventsDisabled(spec string) bool {
+	switch strings.ToLower(spec) {
+	case "", "off", "none", "disable", "disabled":
+		return true
+	}
+	return false
 }
