@@ -1,11 +1,5 @@
-github.com/QYVORA/qyvora-tui v0.2.0 h1:fIEBwAoC6b4NDTedLot03oTmDJNyylnZUoqSQqmildo=
-github.com/QYVORA/qyvora-tui v0.2.0/go.mod h1:/FVOkitZumftOt3uI17IBscO3MAt0bv5MkaUhwLmCic=
-github.com/QYVORA/qyvora-tui v0.3.0 h1:ftsTm3GGgDSq1cMLQMN1YAf7DplLpdmvt/EKkTUWdUk=
-github.com/QYVORA/qyvora-tui v0.3.0/go.mod h1:/FVOkitZumftOt3uI17IBscO3MAt0bv5MkaUhwLmCic=
-github.com/QYVORA/qyvora-tui v0.3.1 h1:N0fju4Av6iNNMNUr8MyRvlvmfbZRf/79NTYPjnzFWMA=
-github.com/QYVORA/qyvora-tui v0.3.1/go.mod h1:/FVOkitZumftOt3uI17IBscO3MAt0bv5MkaUhwLmCic=
-github.com/QYVORA/qyvora-tui v0.4.0 h1:2Qt3aN9cfw7oQcCgSaRqZm0gIva4STAJ+QVtYIwVfr4=
-github.com/QYVORA/qyvora-tui v0.4.0/go.mod h1:oZmWXC+vjwQSFNoX8MzvRTkUoHD3Z4eGyC4U9VjmJW4=
+github.com/QYVORA/qyvora-tui v0.5.0 h1:CK86KmdpgROHXcir4gAY5lAl6I5WxOJJkHML64gtgio=
+github.com/QYVORA/qyvora-tui v0.5.0/go.mod h1:oZmWXC+vjwQSFNoX8MzvRTkUoHD3Z4eGyC4U9VjmJW4=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
@@ -105,6 +99,8 @@ github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e h1:JVG44RsyaB9T2KIHavM
 github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e/go.mod h1:RbqR21r5mrJuqunuUZ/Dhy/avygyECGrLceyNeo4LiM=
 go.yaml.in/yaml/v3 v3.0.4 h1:tfq32ie2Jv2UxXFdLJdh3jXuOzWiL1fo0bu/FbuKpbc=
 go.yaml.in/yaml/v3 v3.0.4/go.mod h1:DhzuOOF2ATzADvBadXxruRBLzYTpT36CKvDb3+aBEFg=
+golang.org/x/exp v0.0.0-20231006140011-7918f672742d h1:jtJma62tbqLibJ5sFQz8bKtEM8rJBtfilJ2qTU199MI=
+golang.org/x/exp v0.0.0-20231006140011-7918f672742d/go.mod h1:ldy0pHrwJyGW56pPQzzkH36rKxoZW1tw7ZJpeKx+hdo=
 golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
