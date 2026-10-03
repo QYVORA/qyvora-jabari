@@ -204,7 +204,7 @@ pkg/utilities/         small shared helpers
 ## Contact
 
 QYVORA OffSec — Tamale, Ghana
-Website: https://qyvora.netlify.app · Security/Support: qyvorasec@gmail.com
+Website: https://qyvora.org · Security/Support: qyvorasec@gmail.com
 
 ## License
 
