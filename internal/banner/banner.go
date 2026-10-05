@@ -37,17 +37,29 @@ const Art = `       _       __               _
 // it cannot drift away from the constants above it.
 const Width = 34
 
-// Render returns Art in the QYVORA brand green.
+// Colorize returns s in the QYVORA brand green.
 //
 // The colour is resolved per call from the environment so a NO_COLOR request
 // or a terminal without truecolor is honoured rather than assumed away: when
-// the profile cannot show the brand colour the plain Art is returned unchanged.
-func Render() string {
+// the profile cannot show the brand colour s is returned unchanged.
+//
+// Callers that print the banner a line at a time, or crop the leading and
+// trailing blank rows, use this rather than Render so the escape codes land on
+// the rows actually drawn.
+func Colorize(s string) string {
+	if s == "" {
+		return s
+	}
 	profile := termenv.EnvColorProfile()
 	if profile == termenv.Ascii {
-		return Art
+		return s
 	}
-	return termenv.String(Art).Foreground(profile.Color(Green)).String()
+	return termenv.String(s).Foreground(profile.Color(Green)).String()
+}
+
+// Render returns the whole banner in the QYVORA brand green.
+func Render() string {
+	return Colorize(Art)
 }
 
 // Print writes Render to stdout.
