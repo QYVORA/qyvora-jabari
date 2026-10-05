@@ -1,44 +1,58 @@
 package banner
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
 
-// TestArtNonEmpty guards against the banner being accidentally emptied by a
-// bad regeneration step.
+// ansi matches the SGR escape sequences Render may add.
+var ansi = regexp.MustCompile("\x1b\\[[0-9;]*m")
+
+// TestArtNonEmpty guards against the banner being accidentally emptied.
 func TestArtNonEmpty(t *testing.T) {
 	if strings.TrimSpace(Art) == "" {
 		t.Fatal("Art is empty")
 	}
 }
 
-// TestArtGlyphs checks that every glyph of the brand palette is present, so
-// the console can map characters to the logo colors with confidence.
-func TestArtGlyphs(t *testing.T) {
-	for _, g := range []string{"%", "#", "+", "*"} {
-		if !strings.Contains(Art, g) {
-			t.Errorf("Art missing brand glyph %q", g)
-		}
+// TestArtIsPlain guards the contract that Art carries no escape codes. Art is
+// written to files and machine-readable streams, so colour has to live in
+// Render instead of leaking into the constant.
+func TestArtIsPlain(t *testing.T) {
+	if ansi.MatchString(Art) {
+		t.Fatal("Art contains ANSI escape sequences; keep colour in Render")
 	}
 }
 
-// TestArtLineWidths sanity-checks the art geometry: the canonical robot mark
-// is roughly square (about 25 lines tall, 40-64 columns wide). Wide
-// deviations indicate the wrong file was embedded.
-func TestArtLineWidths(t *testing.T) {
-	lines := strings.Split(Art, "\n")
-	nonEmpty := 0
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		nonEmpty++
-		if w := len([]rune(line)); w < 40 || w > 70 {
-			t.Errorf("art line %q has width %d, want 40-70", line, w)
+// TestRenderPreservesArt checks that colouring is purely additive: stripping
+// the escapes from Render must give back Art exactly, whatever the terminal
+// profile happens to be. This is what keeps a redirected run byte-identical to
+// the plain banner.
+func TestRenderPreservesArt(t *testing.T) {
+	if got := ansi.ReplaceAllString(Render(), ""); got != Art {
+		t.Error("Render did not reduce to Art once escapes were removed")
+	}
+}
+
+// TestWidthMatchesArt pins Width to the art it describes. A stale width is
+// worse than none: it is the number a caller uses to decide the banner fits.
+func TestWidthMatchesArt(t *testing.T) {
+	want := 0
+	for _, line := range strings.Split(strings.TrimRight(Art, "\n"), "\n") {
+		if n := len(line); n > want {
+			want = n
 		}
 	}
-	if nonEmpty != 25 {
-		t.Errorf("art has %d non-empty lines, want 25", nonEmpty)
+	if Width != want {
+		t.Errorf("Width = %d, want %d (widest row of Art)", Width, want)
+	}
+}
+
+// TestGreenIsBrandAccent pins the brand colour so a well-meaning edit cannot
+// quietly repaint every tool.
+func TestGreenIsBrandAccent(t *testing.T) {
+	if Green != "#06B66F" {
+		t.Errorf("Green = %q, want %q", Green, "#06B66F")
 	}
 }

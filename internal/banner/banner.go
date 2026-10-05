@@ -1,40 +1,56 @@
-// Package banner provides the canonical JABARI brand banner (ASCII art).
+// Package banner provides the canonical JABARI brand banner.
 //
-// The art below is the exact byte-for-byte content of the brand banner file
-// jabari-banner.txt kept in the tools repository root (next to the sibling
-// tools' banner files). Every surface of the tool (interactive console,
-// terminal reports) MUST render this banner — never substitute custom art or
-// hand-written wordmarks.
+// The art below is generated from the tool name with `figlet -f slant` and is
+// kept byte-for-byte in jabari-banner.txt in the tools repository root, so a
+// plain-text copy exists that does not depend on this build.
+//
+// Art is deliberately plain: it is safe to write to a file, a log or a
+// machine-readable stream. Render applies the QYVORA brand green for terminal
+// output only, and degrades gracefully when the terminal cannot show it.
+//
+// Every surface of the tool renders this banner; never substitute custom art
+// or a hand-written wordmark.
 package banner
 
-// Art is the JABARI brand mark: the robot / face symbol from the product
-// logo. The glyphs follow the brand palette — '%' is the lime-green
-// (#85C236) foreground of the robot body, '#' is the deep blue-black
-// (#19222B) circular background, and '+' / '*' are the white (#FFFFFF)
-// structural details (antenna, signal waves, eyes).
-const Art = `                        %%%%%%%%%%%%%%                          
-                  %%%%%%%%%%%%%%%%%%%%%%%%%                 
-              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%             
-           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-        %%%%%%%%%%%%%%%%%%%%%#+*%%%%%%%%%%%%%%%%%%%%%       
-      %%%%%%%%#%%%%%%%%%%%%%*++++%%%%%%%%%%%%##%%%%%%%%     
-     %%%%%%%%%+++%%%%%%%%%%*++++++*%%%%%%%%%+++%%%%%%%%%    
-    %%%%%%%%%%%*++%%%%%%%%###+++####%%%%%%%++%%%%%%%%%%%%%  
-  %%%%%%%%%%%%%%%#++%%%*++++++++%%%++#%%%++#%%%%%%%%%%%%%%% 
-  %%%%%%%%%%%%%%%%*+++++++++++++%%%%%*++++#%%%%%%%%%%%%%%%% 
- %%%%%%%%%%%%%%#*+++++++++++++++%%%%%%%%%++#%%#%%%%%%%%%%%%%
-%%%%%%%%%%%%%*++++++++++++++++++%%%%%%%%%%%%%%%%+++%%%%%%%%%
-%%%%%%%%%%%#++++++++++++++#*++++%%%%%%%%%%%%*++#%%*+#%%%%%%%
-%%%%%%%%%%#++++++++++++++%%%#+++%%%%%%%%%%%#%%%++*%#++%%%%%%
-%%%%%%%%%%++++++++++++++++%#++++%%%%%%%%%%%#++#%*+*%#+*%%%%%
- %%%%%%%%++++++++++   ++++%%++++%%%%%%   %%%%*+*%%+#%#+%%%%%
-  %%%%%%#++++++++++   +++++*%#++%%%%%%   %%%%#+*%%+*%#+#%%% 
-  %%%%%%*++++++++++++++++++++%*+%%%%%%%%%%%%%%#%%%+#%#+%%%% 
-    %%%%#++++++++++++++++++++%*+%%%%%%%%%%%%%%%%%%%%%#%%%   
-     %%%%%%**+++++++++++++++%#+++%%%%%%%%%%%%%%%%%%%%%%%    
-       %%%%%%%%%%%%%%%%%%%%%*++++++%%%%%%%%%%%%%%%%%%%%     
-        %%%%%%%%%%%%%%%%%%%%%+++++#%%%%%%%%%%%%%%%%%%       
-           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%           
-              %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%             
-                   %%%%%%%%%%%%%%%%%%%%%%%%
+import (
+	"os"
+
+	"github.com/muesli/termenv"
+)
+
+// Green is the QYVORA brand accent, the colour every tool banner is drawn in.
+const Green = "#06B66F"
+
+// Art is the canonical JABARI ASCII art banner.
+const Art = `       _       __               _ 
+      (_)___ _/ /_  ____ ______(_)
+     / / __ ` + "`" + `/ __ \/ __ ` + "`" + `/ ___/ / 
+    / / /_/ / /_/ / /_/ / /  / /  
+ __/ /\__,_/_.___/\__,_/_/  /_/   
+/___/                             
 `
+
+// Width is the widest row of Art, in columns.
+//
+// A caller that has to decide whether the banner fits before drawing it reads
+// this rather than counting the art itself. It is generated with the art, so
+// it cannot drift away from the constants above it.
+const Width = 34
+
+// Render returns Art in the QYVORA brand green.
+//
+// The colour is resolved per call from the environment so a NO_COLOR request
+// or a terminal without truecolor is honoured rather than assumed away: when
+// the profile cannot show the brand colour the plain Art is returned unchanged.
+func Render() string {
+	profile := termenv.EnvColorProfile()
+	if profile == termenv.Ascii {
+		return Art
+	}
+	return termenv.String(Art).Foreground(profile.Color(Green)).String()
+}
+
+// Print writes Render to stdout.
+func Print() {
+	_, _ = os.Stdout.WriteString(Render())
+}

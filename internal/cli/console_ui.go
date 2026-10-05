@@ -24,9 +24,6 @@ const (
 	ansiOnBlack = "\x1b[40m"
 	// Brand lime green #85C236 (RGB 133,194,54) — the primary logo accent.
 	ansiLime = "\x1b[38;2;133;194;54m"
-	// Brand deep blue-black #19222B (RGB 25,34,43) — the logo background,
-	// used for the banner's negative space.
-	ansiDeep = "\x1b[38;2;25;34;43m"
 )
 
 // consoleSectionWidth is the default layout width used by the console HUD.
@@ -210,35 +207,22 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 }
 
 // Banner prints the canonical brand banner (internal/banner) followed by the
-// tagline, mapping each glyph to the logo palette so the mark renders in the
-// brand colors on a real terminal and stays plain when colors are off.
+// tagline, drawn in the QYVORA accent so the mark renders in the brand colour
+// on a real terminal and stays plain when colours are off.
+//
+// The colour comes from banner.Render, which is the single place the accent is
+// defined, but the console's own colour decision still wins: when colours are
+// off the plain Art is used even on a terminal that could show the accent, so
+// NO_COLOR is honoured by this surface too.
 func (u *consoleUI) Banner(tagline string) {
-	for _, line := range strings.Split(banner.Art, "\n") {
-		var b strings.Builder
-		for _, r := range line {
-			b.WriteString(u.paint(string(r), bannerGlyphColor(r)))
-		}
-		_, _ = fmt.Fprintln(u.w, b.String())
+	art := banner.Art
+	if u.color {
+		art = banner.Render()
 	}
+	_, _ = fmt.Fprintln(u.w, strings.TrimRight(art, "\n"))
 	_, _ = fmt.Fprintln(u.w)
 	_, _ = fmt.Fprintln(u.w, u.BoldWhite(tagline))
 	_, _ = fmt.Fprintln(u.w)
-}
-
-// bannerGlyphColor maps a glyph of the canonical brand art to the logo
-// palette: '%' is the lime-green (#85C236) robot body, '#' the deep
-// blue-black (#19222B) circular background, and '+'/'*' the white (#FFFFFF)
-// structural details.
-func bannerGlyphColor(r rune) string {
-	switch r {
-	case '%':
-		return ansiLime
-	case '#':
-		return ansiDeep
-	case '+', '*':
-		return ansiWhite
-	}
-	return ansiWhite
 }
 
 // BannerFoot prints the version footer and a help hint under the banner.
