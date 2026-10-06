@@ -26,6 +26,8 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/version"
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
+var updateFlag bool
+
 
 var (
 	cfgFile    string
@@ -145,6 +147,15 @@ func ExecuteArgs(args []string) int {
 func ExecuteArgsContext(ctx context.Context, args []string) int {
 	rootCmd.SetArgs(args)
 
+	// If --update is passed, route to the update subcommand regardless of
+	// other positional arguments.
+	for _, a := range args {
+		if a == "--update" || a == "-update" || a == "--update=true" {
+			rootCmd.SetArgs([]string{"update"})
+			break
+		}
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		var exitErr *errs.ExitError
 		if errors.As(err, &exitErr) {
@@ -184,14 +195,15 @@ func init() {
 		return errs.NewExitError(2, err.Error())
 	})
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default $HOME/.config/qyvora/jabari/config.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "suppress non-error output")
-	rootCmd.PersistentFlags().StringVarP(&outputFmt, "output", "o", "", "output format: terminal, json, markdown, html, yaml")
-	rootCmd.PersistentFlags().BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json)")
-	rootCmd.PersistentFlags().StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
-	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
-	rootCmd.PersistentFlags().DurationVarP(&timeout, "timeout", "t", 30*time.Second, "default timeout for device operations")
+	pf := rootCmd.PersistentFlags()
+	pf.BoolVar(&updateFlag, "update", false, "update the CLI to the latest official release")
+	pf.StringVarP(&cfgFile, "config", "c", "", "config file (default $HOME/.config/qyvora/jabari/config.yaml")
+	pf.BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	pf.BoolVarP(&quiet, "quiet", "q", false, "suppress non-error output")
+	pf.StringVarP(&outputFmt, "output", "o", "", "output format: terminal, json, markdown, html, yaml")
+	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json")
+	pf.StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
+	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newUpdatesCmd())
