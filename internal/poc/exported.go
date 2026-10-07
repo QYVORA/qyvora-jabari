@@ -31,6 +31,7 @@ func (m *exportedActivity) Meta() ModuleMeta {
 		Name:        exportedModuleName,
 		Category:    "application",
 		Risk:        RiskHigh,
+		NoiseLevel:  models.NoiseLevelAggressive,
 		Description: "Proves an exported activity is launchable by an external caller via am start.",
 		Preconditions: "An application finding naming a package whose inventory entry lists " +
 			"activities. Requires explicit high-risk opt-in.",

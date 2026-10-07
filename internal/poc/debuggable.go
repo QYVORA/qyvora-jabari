@@ -29,6 +29,7 @@ func (m *runAsDebuggable) Meta() ModuleMeta {
 		Name:        runAsModuleName,
 		Category:    "application",
 		Risk:        RiskMedium,
+		NoiseLevel:  models.NoiseLevelModerate,
 		Description: "Proves a debuggable app (or ro.debuggable=1 build) allows an external caller to execute commands as the app via run-as.",
 		Preconditions: "A finding for ro.debuggable=1 or a debuggable app, and an installed app " +
 			"that run-as can enter.",

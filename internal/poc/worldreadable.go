@@ -30,6 +30,7 @@ func (m *worldReadableData) Meta() ModuleMeta {
 		Name:        worldReadableModuleName,
 		Category:    "application",
 		Risk:        RiskLow,
+		NoiseLevel:  models.NoiseLevelLow,
 		Description: "Proves the shell user can list an app's /data/data directory, indicating world-readable private data.",
 		Preconditions: "An application finding that names a package whose data directory " +
 			"can be probed on the live device.",

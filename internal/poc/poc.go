@@ -42,6 +42,8 @@ type ModuleMeta struct {
 	Category string
 	// Risk is the module's disruptiveness.
 	Risk Risk
+	// NoiseLevel is the OPSEC footprint of the module.
+	NoiseLevel models.NoiseLevel
 	// Description explains what the module proves and how.
 	Description string
 	// Preconditions notes what must be true for the module to prove anything.
