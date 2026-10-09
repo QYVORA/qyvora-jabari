@@ -13,7 +13,9 @@ import (
 // the canonical brand banner (internal/banner), not hand-written wordmark
 // text.
 func renderTerminal(w io.Writer, s *models.Session) error {
-	writef(w, "%s\n", strings.TrimRight(banner.Art, "\n"))
+	for _, line := range banner.ArtLines() {
+		writef(w, "%s\n", line)
+	}
 	writef(w, "\n")
 
 	writef(w, "Session\n")

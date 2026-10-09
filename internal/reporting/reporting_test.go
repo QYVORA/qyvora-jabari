@@ -52,8 +52,11 @@ func TestRenderTerminal(t *testing.T) {
 		}
 	}
 	// The report header must be the canonical brand banner, not custom text.
-	if !strings.Contains(out, banner.Art) {
-		t.Error("terminal output missing the canonical brand banner")
+	for _, line := range banner.ArtLines() {
+		if !strings.Contains(out, line) {
+			t.Error("terminal output missing the canonical brand banner")
+			break
+		}
 	}
 }
 

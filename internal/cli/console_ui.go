@@ -215,11 +215,13 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 // off the plain Art is used even on a terminal that could show the accent, so
 // NO_COLOR is honoured by this surface too.
 func (u *consoleUI) Banner(tagline string) {
-	art := banner.Art
-	if u.color {
-		art = banner.Render()
+	rows := banner.RenderCLI()
+	for _, line := range rows {
+		if u.color {
+			line = banner.Colorize(line)
+		}
+		_, _ = fmt.Fprintln(u.w, line)
 	}
-	_, _ = fmt.Fprintln(u.w, strings.TrimRight(art, "\n"))
 	_, _ = fmt.Fprintln(u.w)
 	_, _ = fmt.Fprintln(u.w, u.BoldWhite(tagline))
 	_, _ = fmt.Fprintln(u.w)
