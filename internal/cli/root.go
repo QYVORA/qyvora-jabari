@@ -26,8 +26,8 @@ import (
 	"github.com/QYVORA/qyvora-jabari/internal/version"
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
-var updateFlag bool
 
+var updateFlag bool
 
 var (
 	cfgFile    string
@@ -38,6 +38,7 @@ var (
 	eventsFlag string
 	dryRun     bool
 	timeout    time.Duration
+	flagNoTui  bool
 
 	cfg     *viper.Viper
 	log     *logger.Logger
@@ -183,6 +184,9 @@ func init() {
 	// rootCmd, so naming it inside rootCmd's own initialiser is a cycle, while
 	// init() is exempt from that analysis.
 	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		if flagNoTui {
+			return cmd.Root().Help()
+		}
 		return runTUI(cmd.Root(), cmd.Context())
 	}
 	rootCmd.AddCommand(commandTUI())
@@ -205,6 +209,7 @@ func init() {
 	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json")
 	pf.StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
 	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
+	pf.BoolVar(&flagNoTui, "no-tui", false, "disable the TUI and print help")
 
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newUpdatesCmd())
