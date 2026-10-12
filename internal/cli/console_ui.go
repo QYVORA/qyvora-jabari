@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/QYVORA/qyvora-jabari/internal/banner"
+	"github.com/QYVORA/qyvora-tui"
 )
 
 // ANSI style codes. The brand accent is lime green (#85C236); hard errors are
@@ -215,6 +216,9 @@ func (u *consoleUI) Table(headers []string, rows [][]string) {
 // off the plain Art is used even on a terminal that could show the accent, so
 // NO_COLOR is honoured by this surface too.
 func (u *consoleUI) Banner(tagline string) {
+	if tui.InTUISession() {
+		return
+	}
 	rows := banner.RenderCLI()
 	for _, line := range rows {
 		if u.color {
@@ -229,6 +233,9 @@ func (u *consoleUI) Banner(tagline string) {
 
 // BannerFoot prints the version footer and a help hint under the banner.
 func (u *consoleUI) BannerFoot(version string) {
+	if tui.InTUISession() {
+		return
+	}
 	u.Status(">", "v %s", version)
 	_, _ = fmt.Fprintln(u.w, u.DimWhite("type 'help' for commands, 'quit' to exit"))
 	_, _ = fmt.Fprintln(u.w)
