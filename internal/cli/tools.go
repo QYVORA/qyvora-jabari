@@ -91,19 +91,3 @@ Typical on a Kali host:
 	}
 }
 
-// cmdTools prints the toolchain report in the interactive console.
-func (c *jabariConsole) cmdTools() {
-	rows := make([][]string, 0, len(toolsSpecs))
-	for _, st := range detectTools() {
-		status := c.ui.Amber("missing")
-		location := "-"
-		if st.Installed {
-			status = c.ui.Green("installed")
-			location = st.Path
-		}
-		rows = append(rows, []string{st.Name, status, st.Purpose, location, st.KaliPkg})
-	}
-	c.ui.Section("Android assessment toolchain")
-	c.ui.Table([]string{"tool", "status", "purpose", "path", "kali package"}, rows)
-	c.ui.Status(">", "install missing tools with: apt install android-tools-adb apktool jadx frida-tools objection drozer")
-}
