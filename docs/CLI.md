@@ -1,177 +1,71 @@
 # CLI Reference
 
-`jabari` (alias `androidsec`) — command reference.
-
-## Global flags
+`jabari` follows the shared QYVORA tier grammar:
 
 ```
--c, --config string   config file (searched: ./config.yaml, ~/.qyvora-jabari/,
-                      ~/.config/qyvora-jabari/, ~/.config/qyvora/jabari/, /etc)
--v, --verbose         verbose output
--q, --quiet           suppress informational output
-    --json            output as JSON (shorthand for -o json)
--o, --output string   output format: terminal, json, markdown, html, yaml
-    --events string   emit JSONL event stream to stdout, stderr, or a file path
--t, --timeout string  default timeout for device operations (default 30s)
-    --dry-run         validate target + print the assessment plan, no execution
--y, --yes             skip interactive authorization confirmation
--h, --help            help
-    --version         version
+jabari <tier> <module> [<action>] [target] [flags]
 ```
 
-## Command summary
+`<tier>` is one of `recon`, `exploit`, or `report`. Every pre-tier command remains available as a hidden alias.
 
-```
-jabari assess usb|ip <addr>   run the full assessment pipeline
-jabari target                 select/inspect the current target
-jabari discover               run the discovery stage
-jabari enumerate              run the enumeration stage
-jabari analyze                run the analysis stage
-jabari validate               run the validation stage
-jabari poc                    run PoC modules against the current target
-jabari report                 render a saved session
-jabari version                print version
-jabari completion <shell>     generate completion scripts
-```
+## recon
 
-## Interactive console
+| Command | Purpose |
+|---------|---------|
+| `jabari recon analyze` | Evaluate rules against the current target |
+| `jabari recon assess` | Run a full assessment pipeline |
+| `jabari recon capabilities` | Show native capabilities and optional integrations |
+| `jabari recon completion` | Generate shell completion scripts |
+| `jabari recon console` | open the legacy Metasploit-style device console |
+| `jabari recon discover` | Identify the current target |
+| `jabari recon enumerate` | Inventory applications on the current target |
+| `jabari recon help` | Help about any command |
+| `jabari recon poc` | Run proof-of-concept modules against the current target |
+| `jabari recon report` | Render an assessment report |
+| `jabari recon target` | Manage assessment targets |
+| `jabari recon tools` | Report the Android assessment toolchain |
+| `jabari recon tui` | start the interactive terminal application |
+| `jabari recon updates` | Update jabari from official QYVORA GitHub releases |
+| `jabari recon validate` | Confirm detected findings on the current target |
+| `jabari recon version` | Print version information |
 
-Running `jabari` with no subcommand drops into a Metasploit-style console.
-On a real terminal this is a readline console; with piped/redirected stdin it
-runs the same commands as a plain line reader (no banner, no colors).
-Every command above (and more) works as a console command, so you can
-sequence a workflow without repeating the `jabari` prefix:
+## exploit
 
-```
-jabari > target usb
-jabari > assess
-jabari > poc --poc-high-risk
-jabari > report list
-jabari > help
-jabari > quit
-```
+| Command | Purpose |
+|---------|---------|
+| `jabari exploit analyze` | Evaluate rules against the current target |
+| `jabari exploit assess` | Run a full assessment pipeline |
+| `jabari exploit capabilities` | Show native capabilities and optional integrations |
+| `jabari exploit completion` | Generate shell completion scripts |
+| `jabari exploit console` | open the legacy Metasploit-style device console |
+| `jabari exploit discover` | Identify the current target |
+| `jabari exploit enumerate` | Inventory applications on the current target |
+| `jabari exploit help` | Help about any command |
+| `jabari exploit poc` | Run proof-of-concept modules against the current target |
+| `jabari exploit report` | Render an assessment report |
+| `jabari exploit target` | Manage assessment targets |
+| `jabari exploit tools` | Report the Android assessment toolchain |
+| `jabari exploit tui` | start the interactive terminal application |
+| `jabari exploit updates` | Update jabari from official QYVORA GitHub releases |
+| `jabari exploit validate` | Confirm detected findings on the current target |
+| `jabari exploit version` | Print version information |
 
-Console extras: `help` / `?`, `banner`, `clear`, `history`, and
-`set <key> <value>` / `get <key>` for live config overrides (e.g.
-`set profile deep`, `set timeout 60s`, `set report.format json`).
-Tab completion, command history, and a live target/profile status strip are
-enabled on interactive terminals. Run `help` inside the console for the full
-command list.
+## report
 
-## `assess`
+_No report-tier modules._
 
-Runs the full pipeline and renders the report.
+## Utilities
 
-```sh
-jabari assess usb                    # connected device
-jabari assess usb <serial>           # specific connected device
-jabari assess ip 192.168.1.50        # authorized device by IP
-jabari assess ip 192.168.1.50:5555   # explicit port
-```
+| Command | Purpose |
+|---------|---------|
+| `jabari analyze` | Evaluate rules against the current target |
+| `jabari assess` | Run a full assessment pipeline |
+| `jabari console` | open the legacy Metasploit-style device console |
+| `jabari discover` | Identify the current target |
+| `jabari enumerate` | Inventory applications on the current target |
+| `jabari poc` | Run proof-of-concept modules against the current target |
+| `jabari target` | Manage assessment targets |
+| `jabari tools` | Report the Android assessment toolchain |
+| `jabari tui` | start the interactive terminal application |
+| `jabari validate` | Confirm detected findings on the current target |
 
-Flags:
-
-- `--profile <name>` — `quick|standard|deep|application|device|network|compliance|research` (default `standard`)
-- `-y, --yes` — non-interactive authorization
-- `--poc` — append the proof-of-concept stage to the pipeline (see
-  [PoC Modules](PoC.md))
-- `--poc-high-risk` — allow PoC modules that change device state (e.g.
-  `android.exported_activity`)
-- `--json` / `-o <fmt>` — report format
-- `--dry-run` — validate the target, the authorization decision and the
-  profile, then print the stage plan without connecting to the device
-
-Exit codes: `0` success, `1` runtime/assessment error, `2` usage or
-authorization error.
-
-## `target`
-
-```sh
-jabari target                # show current target
-jabari target usb            # select connected device (interactive if >1)
-jabari target usb <serial>
-jabari target ip <addr>      # select network target
-```
-
-## `discover`
-
-Collects device metadata into the current session.
-
-## `enumerate`
-
-Inventories installed packages and their metadata.
-
-## `analyze`
-
-Evaluates all enabled rules against the current target and apps.
-
-## `validate`
-
-Re-runs non-destructive confirmation checks for each open finding and updates
-their `confirmed` status.
-
-## `poc`
-
-Runs proof-of-concept modules against the current target and records the
-results (`proven` / `not-proven` / `skipped` / `error`) on the session.
-Refuses to run unless the target is authorized (exit code `3`).
-
-```sh
-jabari poc                          # run all eligible modules (authorized target)
-jabari poc --poc-high-risk          # also allow state-changing modules
-jabari poc --poc-module android.world_readable_data
-```
-
-See [PoC Modules](PoC.md) for the module catalog, safety gates and event
-schema.
-
-## `report`
-
-```sh
-jabari report                 # render the most recent session
-jabari report --list          # list saved sessions
-jabari report <session-id>    # render a specific session
-jabari report <session-id> -f html   # specific format
-```
-
-## `version`
-
-Prints the build version, commit, date, and user. Add `--json` for machine
-output.
-
-## `completion`
-
-```sh
-jabari completion bash
-jabari completion zsh
-jabari completion fish
-jabari completion powershell
-```
-
-## Environment variables
-
-The environment namespace is `QYVORA_*`. Every config key maps to an
-environment variable of the same name, uppercased with dots replaced by
-underscores (viper automatic binding), so `profile`, `output`, `report.dir`,
-`log.level` become `QYVORA_PROFILE`, `QYVORA_OUTPUT`, `QYVORA_REPORT_DIR`,
-`QYVORA_LOG_LEVEL` and so on. `QYVORA_AUTHORIZED=true` is also honored
-directly. CLI flags take precedence over the environment.
-
-## Events stream
-
-`--events` emits one self-describing JSONL event per line to `stdout`,
-`stderr`, or a file path (created/truncated mode 0600). Events carry
-`schema_version`, `timestamp`, `execution_id`, `framework`, `level`, `event`
-and `data`, covering the run lifecycle (`run.started`, `run.completed`),
-pipeline stages, findings, warnings and errors. PoC modules additionally emit
-`module.started` / `module.completed` lifecycle events whose `data` carries
-the full `PocRun`. The schema is identical across the QYVORA frameworks.
-
-## Exit codes
-
-| Code | Meaning |
-|---|---|
-| 0 | success |
-| 1 | runtime, target/transport, or assessment error |
-| 2 | usage, configuration, or target-selection error |
-| 3 | authorization declined (target authorization gate or PoC stage) |
