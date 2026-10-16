@@ -204,9 +204,10 @@ func init() {
 	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json")
 	pf.StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
 	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
+	pf.BoolVar(&allowShellOut, "allow-shellout", false, "allow scripts to use exec/run.cmd shell-out (also via QYVORA_ALLOW_SHELLOUT=1)")
 
 	// Flat utility commands, identical in shape across all 14 tools.
-	rootCmd.AddCommand(newVersionCmd(), newUpdatesCmd(), newCompletionCmd(), newCapabilitiesCmd())
+	rootCmd.AddCommand(newVersionCmd(), newUpdatesCmd(), newCompletionCmd(), newCapabilitiesCmd(), newScriptCmd())
 
 	// Tier grammar: <tool> <tier> <module> [<action>] [target] [flags].
 	// jabari's device inventory, target selection, discovery, enumeration and

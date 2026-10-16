@@ -7,6 +7,7 @@ continue_AI.sh
 
 # Sessions, reports, evidence (may contain sensitive data)
 reports/
+jabari-report/
 /evidence/
 *.session.json
 
