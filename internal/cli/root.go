@@ -38,7 +38,6 @@ var (
 	eventsFlag string
 	dryRun     bool
 	timeout    time.Duration
-	flagNoTui  bool
 
 	cfg     *viper.Viper
 	log     *logger.Logger
@@ -205,7 +204,6 @@ func init() {
 	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json")
 	pf.StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
 	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
-	pf.BoolVar(&flagNoTui, "no-tui", false, "disable the TUI and print help")
 
 	// Flat utility commands, identical in shape across all 14 tools.
 	rootCmd.AddCommand(newVersionCmd(), newUpdatesCmd(), newCompletionCmd(), newCapabilitiesCmd())
