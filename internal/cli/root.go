@@ -56,15 +56,11 @@ assessment, attack-surface analysis, vulnerability validation, and
 evidence-driven reporting across USB-connected and specified-network
 Android targets.
 
-Usage modes:
-  jabari assess usb          assess a connected authorized device
-  jabari assess ip <addr>    assess one specific authorized Android device
-  jabari target usb          select a connected device as the current target
-  jabari enumerate           enumerate the current target
-  jabari analyze             run the rule engine against the current target
-  jabari validate            confirm detected findings on the current target
-  jabari poc                 run proof-of-concept modules against live findings
-  jabari report              render the latest assessment report
+Commands follow the shared tier grammar
+<tool> <tier> <module> [<action>] [target] [flags], where the tier is one of
+recon, exploit, or report. Run it with no arguments to print this help;
+assessment is one-shot, e.g. jabari recon assess usb,
+jabari exploit validate, jabari report.
 
 Every assessment requires explicit target authorization. jabari is scoped,
 reversible, logged, and intended for use only on systems you are authorized
@@ -77,6 +73,12 @@ var rootCmd = &cobra.Command{
 	Version:       version.String(),
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	Example: `  jabari recon assess usb
+  jabari recon enumerate
+  jabari recon analyze
+  jabari exploit validate
+  jabari exploit poc
+  jabari report`,
 	// Validate shared flag/config state before any command runs so an
 	// invalid --output value is rejected as a usage error (exit code 2)
 	// instead of executing the command first.
@@ -205,21 +207,70 @@ func init() {
 	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
 	pf.BoolVar(&flagNoTui, "no-tui", false, "disable the TUI and print help")
 
-	rootCmd.AddCommand(newVersionCmd())
-	rootCmd.AddCommand(newUpdatesCmd())
-	rootCmd.AddCommand(newCompletionCmd())
-	rootCmd.AddCommand(newCapabilitiesCmd())
-	rootCmd.AddCommand(newToolsCmd())
-	rootCmd.AddCommand(newTargetCmd())
-	rootCmd.AddCommand(newAssessCmd())
-	rootCmd.AddCommand(newStageCmd("discover", "Identify the current target", runDiscover))
-	rootCmd.AddCommand(newStageCmd("enumerate", "Inventory applications on the current target", runEnumerate))
-	rootCmd.AddCommand(newStageCmd("analyze", "Evaluate rules against the current target", runAnalyze))
-	rootCmd.AddCommand(newStageCmd("validate", "Confirm detected findings on the current target", runValidate))
-	rootCmd.AddCommand(newPocCmd())
-	rootCmd.AddCommand(newReportCmd())
+	// Flat utility commands, identical in shape across all 14 tools.
+	rootCmd.AddCommand(newVersionCmd(), newUpdatesCmd(), newCompletionCmd(), newCapabilitiesCmd())
+
+	// Tier grammar: <tool> <tier> <module> [<action>] [target] [flags].
+	// jabari's device inventory, target selection, discovery, enumeration and
+	// rule-analysis work is recon-tier; validation and proof-of-concept modules
+	// execute against the target and are exploit-tier; the report surface is
+	// report-tier. The tier parents always exist so the command shape is
+	// uniform across tools.
+	recon := &cobra.Command{
+		Use:   "recon",
+		Short: "Discovery, enumeration, target and analysis modules",
+	}
+	recon.AddCommand(
+		newAssessCmd(),
+		newStageCmd("discover", "Identify the current target", runDiscover),
+		newStageCmd("enumerate", "Inventory applications on the current target", runEnumerate),
+		newStageCmd("analyze", "Evaluate rules against the current target", runAnalyze),
+		newTargetCmd(),
+		newToolsCmd(),
+	)
+
+	exploit := &cobra.Command{
+		Use:   "exploit",
+		Short: "Active validation and proof-of-concept modules",
+	}
+	exploit.AddCommand(
+		newStageCmd("validate", "Confirm detected findings on the current target", runValidate),
+		newPocCmd(),
+	)
+
+	report := newReportCmd()
+	report.Short = "Render the latest or named assessment report"
+
+	rootCmd.AddCommand(recon, exploit, report)
+
+	// Backward-compatible top-level aliases: the tier form is the supported
+	// grammar, but every pre-tier invocation keeps resolving as a hidden
+	// command so existing scripts are not broken. `report` is itself a tier
+	// name, so its pre-tier form is handled by the tier. Cobra does not suggest
+	// hidden commands, so help stays clean.
+	rootCmd.AddCommand(
+		hiddenAlias("assess", newAssessCmd()),
+		hiddenAlias("discover", newStageCmd("discover", "Identify the current target", runDiscover)),
+		hiddenAlias("enumerate", newStageCmd("enumerate", "Inventory applications on the current target", runEnumerate)),
+		hiddenAlias("analyze", newStageCmd("analyze", "Evaluate rules against the current target", runAnalyze)),
+		hiddenAlias("validate", newStageCmd("validate", "Confirm detected findings on the current target", runValidate)),
+		hiddenAlias("poc", newPocCmd()),
+		hiddenAlias("target", newTargetCmd()),
+		hiddenAlias("tools", newToolsCmd()),
+	)
 
 	rootCmd.SetVersionTemplate(fmt.Sprintf("jabari %s\n", version.String()))
+}
+
+// hiddenAlias registers a command under its bare name, hidden from help, so
+// the pre-tier invocation form keeps resolving. The trailing usage breadcrumb
+// (e.g. "assess usb [serial]") is preserved.
+func hiddenAlias(name string, cmd *cobra.Command) *cobra.Command {
+	if old := cmd.Name(); name != old {
+		cmd.Use = name + cmd.Use[len(old):]
+	}
+	cmd.Hidden = true
+	return cmd
 }
 
 // initConfig loads configuration and initializes the shared logger, printer,
