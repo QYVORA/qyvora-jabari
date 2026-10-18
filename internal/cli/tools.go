@@ -90,4 +90,3 @@ Typical on a Kali host:
 		},
 	}
 }
-

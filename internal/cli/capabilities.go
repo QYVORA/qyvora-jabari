@@ -72,4 +72,3 @@ Each record's status is "native", "integration" (available) or "missing".`,
 		},
 	}
 }
-
