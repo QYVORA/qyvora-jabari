@@ -68,4 +68,4 @@ _No report-tier modules._
 | `jabari tools` | Report the Android assessment toolchain |
 | `jabari tui` | start the interactive terminal application |
 | `jabari validate` | Confirm detected findings on the current target |
-
+| `docs script <file>` | Run a `.qs` script with the shared scripting engine (`run`/`build` subcommands) |
