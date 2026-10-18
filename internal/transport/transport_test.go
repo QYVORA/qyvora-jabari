@@ -2,11 +2,27 @@ package transport
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/QYVORA/qyvora-jabari/pkg/models"
 )
+
+// stubADB places an executable `adb` stub first in PATH so construction-time
+// LookPath succeeds. The factory tests only exercise transport wiring (which
+// address and port a target produces), never adb itself, so they must not
+// require a real Android SDK on the machine or CI runner.
+func stubADB(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	stub := filepath.Join(dir, "adb")
+	if err := os.WriteFile(stub, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write adb stub: %v", err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
 
 func TestParseProps(t *testing.T) {
 	in := []byte(`[ro.product.manufacturer]: [Example]
@@ -43,6 +59,7 @@ func TestParsePropsSkipsMalformedLines(t *testing.T) {
 func TestNewForTargetNetwork(t *testing.T) {
 	// The factory must build a network transport with the requested address
 	// and default ADB port.
+	stubADB(t)
 	tr, err := NewForTarget(&models.Target{
 		Type:    models.TargetNetwork,
 		Address: "203.0.113.7",
