@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/QYVORA/qyvora-jabari/internal/banner"
 	"github.com/QYVORA/qyvora-jabari/internal/config"
 	errs "github.com/QYVORA/qyvora-jabari/internal/errors"
 	"github.com/QYVORA/qyvora-jabari/internal/logger"
@@ -68,7 +69,7 @@ to assess.`
 var rootCmd = &cobra.Command{
 	Use:           "jabari",
 	Short:         "Authorized Android security assessment framework",
-	Long:          appDescription,
+	Long:          banner.Render() + "\n\n  " + banner.Tagline + " — " + version.CompanyName + "\n  " + version.CompanyURL + "\n  Built in " + version.CompanyCity + "\n\n" + appDescription,
 	Version:       version.String(),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -201,7 +202,7 @@ func init() {
 	pf.BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 	pf.BoolVarP(&quiet, "quiet", "q", false, "suppress non-error output")
 	pf.StringVarP(&outputFmt, "output", "o", "", "output format: terminal, json, markdown, html, yaml")
-	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json")
+	pf.BoolVar(&jsonOut, "json", false, "output in JSON format (shorthand for --output json)")
 	pf.StringVar(&eventsFlag, "events", "", "emit a machine-readable JSONL event stream to stdout, stderr, or a file path")
 	pf.BoolVar(&dryRun, "dry-run", false, "validate target and print the assessment plan without executing")
 	pf.BoolVar(&allowShellOut, "allow-shellout", false, "allow scripts to use exec/run.cmd shell-out (also via QYVORA_ALLOW_SHELLOUT=1)")
