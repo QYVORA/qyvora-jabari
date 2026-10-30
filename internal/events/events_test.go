@@ -53,8 +53,12 @@ func TestEmitterWritesJSONL(t *testing.T) {
 	if first.Timestamp.IsZero() {
 		t.Error("timestamp is zero")
 	}
-	if first.Data["profile"] != "standard" {
-		t.Errorf("data.profile = %v, want standard", first.Data["profile"])
+	var data map[string]any
+	if err := first.DecodeData(&data); err != nil {
+		t.Fatalf("decode data: %v", err)
+	}
+	if data["profile"] != "standard" {
+		t.Errorf("data.profile = %v, want standard", data["profile"])
 	}
 	if events[1].Level != LevelError {
 		t.Errorf("second event level = %q, want %q", events[1].Level, LevelError)

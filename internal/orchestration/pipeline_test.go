@@ -82,7 +82,11 @@ func TestPipelineEmitsFailureEventAtErrorLevel(t *testing.T) {
 		}
 		if e.Event == events.StageCompleted && e.Level == events.LevelError {
 			sawError = true
-			if e.Data["message"] == nil {
+			var data map[string]any
+			if err := e.DecodeData(&data); err != nil {
+				t.Fatalf("decode event data: %v", err)
+			}
+			if data["message"] == nil {
 				t.Error("failure stage.completed event missing message")
 			}
 		}
