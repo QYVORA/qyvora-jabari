@@ -5,8 +5,20 @@ import (
 
 	"github.com/QYVORA/qyvora-jabari/internal/capabilities"
 	"github.com/QYVORA/qyvora-jabari/internal/output"
+	"github.com/QYVORA/qyvora-jabari/internal/version"
 	"github.com/spf13/cobra"
 )
+
+// capabilityDocument is the machine contract shape shared by QYVORA
+// frameworks. The legacy flat array is kept under capabilities for
+// compatibility with existing consumers.
+type capabilityDocument struct {
+	Framework     string                    `json:"framework"`
+	Version       string                    `json:"version"`
+	OutputFormats []string                  `json:"output_formats"`
+	Capabilities  []capabilities.Capability `json:"capabilities"`
+	Commands      []capabilities.Capability `json:"commands"`
+}
 
 func newCapabilitiesCmd() *cobra.Command {
 	return &cobra.Command{
@@ -17,15 +29,23 @@ func newCapabilitiesCmd() *cobra.Command {
 Native capabilities are built into Jabari and require no external dependencies.
 Integrations are optional tools that extend Jabari's functionality.
 
-Machine output (-o json) emits a flat list of capability records:
-[{"name": "...", "category": "Android Engine", "status": "native", "description": "..."}]
+Machine output (-o json or -o yaml) emits a capability document whose
+capabilities/commands arrays contain records such as
+{"name": "...", "category": "Android Engine", "status": "native"}.
 Each record's status is "native", "integration" (available) or "missing".`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			// Machine formats flatten the categorized table into one list of
 			// capability records so consumers get clean JSON/YAML.
 			if printer.Format() == output.FormatJSON || printer.Format() == output.FormatYAML {
-				printer.Print(capabilities.Detect())
+				list := capabilities.Detect()
+				printer.Print(capabilityDocument{
+					Framework:     version.Framework,
+					Version:       version.GetInfo().Version,
+					OutputFormats: []string{"terminal", "json", "yaml"},
+					Capabilities:  list,
+					Commands:      list,
+				})
 				return nil
 			}
 
