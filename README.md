@@ -7,7 +7,10 @@ assessment**, attack-surface analysis, vulnerability validation, and
 evidence-driven reporting across **USB-connected** and **specified-network**
 Android targets.
 
-> The CLI is `jabari`, published under the alias `androidsec`.
+> The CLI is `jabari`, published under the alias `androidsec`. The local
+> `bin/androidsec` entry is an intentional relative symlink to `jabari`,
+> created by `make build` so the alias survives moving the checkout; `bin/` is
+> a gitignored build-output directory.
 
 ---
 
@@ -101,7 +104,7 @@ make install-user          # per-user, no root
 ## Updating
 
 ```sh
-jabari updates             # `jabari update` works as an alias; also available in the console
+jabari updates             # `jabari update` works as an alias
 ```
 
 Checks the installed version against the latest official QYVORA GitHub
@@ -114,10 +117,6 @@ no Go toolchain or Git required.
 ## Quick start
 
 ```sh
-# Drop into the interactive console (Metasploit-style REPL)
-# On a real terminal only; piped/redirected stdin uses a plain line reader.
-jabari
-
 # Assess a connected device (interactive authorization)
 jabari assess usb
 
@@ -128,15 +127,10 @@ jabari assess ip 192.168.1.50
 jabari assess ip 192.168.1.50 -y --profile deep --json
 ```
 
-Inside the console you get a colored prompt, a live target/profile status
-strip, tab completion, and history:
-
-```text
-jabariλ > target usb
-jabariλ > assess
-jabariλ > help
-jabariλ > quit
-```
+The interactive console is retired and unavailable in this release. The
+per-tool TUI is excluded from builds (`//go:build ignore`), and a bare `jabari`
+invocation prints CLI usage; the console sources are disabled pending the
+redirect of qyvora-tui to the future AI orchestration layer.
 
 Example terminal output:
 
